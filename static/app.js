@@ -25,6 +25,7 @@ const viewTitleEl = document.querySelector("#viewTitle");
 const viewSubtitleEl = document.querySelector("#viewSubtitle");
 
 let currentImage = null;
+let currentFileName = "";
 let currentResult = null;
 let currentDeepResult = null;
 let activeView = "overview";
@@ -35,6 +36,7 @@ let isPanning = false;
 let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
 
 const API_BASE = window.ORCA_API_BASE || localStorage.getItem("ORCA_API_BASE") || "";
+const LOCAL_MODEL_LABEL = "Browser";
 
 const viewLabels = {
   overview: ["Overview", "Current analysis state"],
@@ -215,7 +217,9 @@ async function apiFetch(path, options = {}) {
     return await res.json();
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error("Orca API is not reachable. Start the FastAPI server, then retry.");
+      const offlineError = new Error("Orca API is not reachable. Running browser analysis instead.");
+      offlineError.browserFallback = true;
+      throw offlineError;
     }
     throw error;
   }
@@ -244,7 +248,7 @@ async function refreshHealth() {
     const health = await apiFetch("/api/health");
     updateMetrics(health);
   } catch {
-    modelStateEl.textContent = "Offline";
+    modelStateEl.textContent = LOCAL_MODEL_LABEL;
   }
 }
 
@@ -375,6 +379,220 @@ function selectedFormData() {
   return form;
 }
 
+function uid(prefix) {
+  return `${prefix}-${Math.random().toString(16).slice(2)}-${Date.now().toString(16)}`;
+}
+
+function clamp(value, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function imageSample(region = null, maxSide = 920) {
+  const source = region || { x_min: 0, y_min: 0, x_max: currentImage.width, y_max: currentImage.height };
+  const sourceWidth = Math.max(1, source.x_max - source.x_min);
+  const sourceHeight = Math.max(1, source.y_max - source.y_min);
+  const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+  const offscreen = document.createElement("canvas");
+  offscreen.width = width;
+  offscreen.height = height;
+  const offscreenCtx = offscreen.getContext("2d", { willReadFrequently: true });
+  offscreenCtx.drawImage(currentImage, source.x_min, source.y_min, sourceWidth, sourceHeight, 0, 0, width, height);
+  return {
+    data: offscreenCtx.getImageData(0, 0, width, height).data,
+    width,
+    height,
+    source,
+    scale,
+  };
+}
+
+function tileStats(sample, tileSize = 38) {
+  const { data, width, height } = sample;
+  const gray = new Float32Array(width * height);
+  let globalMean = 0;
+  for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
+    const value = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    gray[p] = value;
+    globalMean += value;
+  }
+  globalMean /= Math.max(1, gray.length);
+
+  const tiles = [];
+  for (let y = 0; y < height; y += tileSize) {
+    for (let x = 0; x < width; x += tileSize) {
+      const x1 = Math.min(width, x + tileSize);
+      const y1 = Math.min(height, y + tileSize);
+      let count = 0;
+      let mean = 0;
+      let variance = 0;
+      let edge = 0;
+      for (let yy = y; yy < y1; yy += 1) {
+        for (let xx = x; xx < x1; xx += 1) {
+          const index = yy * width + xx;
+          const value = gray[index];
+          mean += value;
+          if (xx > 0) edge += Math.abs(value - gray[index - 1]);
+          if (yy > 0) edge += Math.abs(value - gray[index - width]);
+          count += 1;
+        }
+      }
+      mean /= Math.max(1, count);
+      for (let yy = y; yy < y1; yy += 1) {
+        for (let xx = x; xx < x1; xx += 1) {
+          const delta = gray[yy * width + xx] - mean;
+          variance += delta * delta;
+        }
+      }
+      variance /= Math.max(1, count);
+      edge /= Math.max(1, count * 2);
+      const localContrast = Math.sqrt(variance);
+      const brightnessDelta = Math.abs(mean - globalMean);
+      const score = clamp(0.36 * (localContrast / 70) + 0.34 * (edge / 38) + 0.2 * (brightnessDelta / 95) + 0.1 * (mean / 255));
+      tiles.push({ x, y, x1, y1, mean, localContrast, edge, score });
+    }
+  }
+  return tiles;
+}
+
+function mergeTiles(tiles, sample, limit = 8) {
+  const threshold = Math.max(0.22, tiles.reduce((sum, tile) => sum + tile.score, 0) / Math.max(1, tiles.length) + 0.08);
+  const selected = tiles
+    .filter((tile) => tile.score >= threshold)
+    .sort((first, second) => second.score - first.score)
+    .slice(0, 80);
+  const boxes = [];
+  const gap = 44;
+
+  selected.forEach((tile) => {
+    const existing = boxes.find((box) => !(tile.x > box.x_max + gap || tile.x1 < box.x_min - gap || tile.y > box.y_max + gap || tile.y1 < box.y_min - gap));
+    if (existing) {
+      existing.x_min = Math.min(existing.x_min, tile.x);
+      existing.y_min = Math.min(existing.y_min, tile.y);
+      existing.x_max = Math.max(existing.x_max, tile.x1);
+      existing.y_max = Math.max(existing.y_max, tile.y1);
+      existing.score = Math.max(existing.score, tile.score);
+      existing.tiles.push(tile);
+    } else {
+      boxes.push({ x_min: tile.x, y_min: tile.y, x_max: tile.x1, y_max: tile.y1, score: tile.score, tiles: [tile] });
+    }
+  });
+
+  return boxes
+    .map((box) => {
+      const sourceScale = 1 / sample.scale;
+      const source = sample.source;
+      const width = Math.max(1, box.x_max - box.x_min);
+      const height = Math.max(1, box.y_max - box.y_min);
+      const avgContrast = box.tiles.reduce((sum, tile) => sum + tile.localContrast, 0) / box.tiles.length;
+      const avgEdge = box.tiles.reduce((sum, tile) => sum + tile.edge, 0) / box.tiles.length;
+      const bbox = {
+        x_min: Math.max(0, Math.round(source.x_min + box.x_min * sourceScale)),
+        y_min: Math.max(0, Math.round(source.y_min + box.y_min * sourceScale)),
+        x_max: Math.min(currentImage.width, Math.round(source.x_min + box.x_max * sourceScale)),
+        y_max: Math.min(currentImage.height, Math.round(source.y_min + box.y_max * sourceScale)),
+      };
+      return { ...box, bbox, area: width * height, avgContrast, avgEdge };
+    })
+    .filter((box) => box.bbox.x_max - box.bbox.x_min > 10 && box.bbox.y_max - box.bbox.y_min > 10)
+    .sort((first, second) => second.area * second.score - first.area * first.score)
+    .slice(0, limit);
+}
+
+function browserCandidate(box, index, sourcePass = "browser") {
+  const score = clamp(box.score);
+  const confidence = clamp(0.52 + score * 0.36 + Math.min(0.12, box.tiles.length / 80));
+  const novelty = clamp(0.18 + score * 0.42);
+  const descriptor = `${box.avgEdge > 18 ? "dense edges" : "soft edges"}, ${box.avgContrast > 35 ? "high contrast" : "low contrast"}, browser pattern region`;
+  return {
+    candidate_id: uid("browser-candidate"),
+    bbox: box.bbox,
+    anomaly_score: Number(score.toFixed(4)),
+    confidence: Number(confidence.toFixed(4)),
+    baseline_similarity: Number((1 - novelty).toFixed(4)),
+    model_novelty: Number(novelty.toFixed(4)),
+    features: {
+      edge_density: Number(clamp(box.avgEdge / 60).toFixed(4)),
+      contrast: Number(box.avgContrast.toFixed(3)),
+      texture_entropy: Number(clamp(box.tiles.length / 12, 0, 8).toFixed(3)),
+      dominant_color_rgb: [0, 0, 0],
+      spatial_frequency: Number(box.avgEdge.toFixed(3)),
+      descriptor,
+    },
+    embedding: [score, confidence, novelty, box.avgContrast / 100, box.avgEdge / 100, box.tiles.length / 100, index / 10, 1].map((value) => Number(clamp(value, 0, 1).toFixed(6))),
+    source_pass: sourcePass,
+  };
+}
+
+function browserCandidates(region = null, limit = 8, sourcePass = "browser") {
+  const sample = imageSample(region);
+  const tileSize = Math.max(28, Math.round(Math.min(sample.width, sample.height) / 18));
+  return mergeTiles(tileStats(sample, tileSize), sample, limit).map((box, index) => browserCandidate(box, index + 1, sourcePass));
+}
+
+function browserAnalysisResult() {
+  const candidates = browserCandidates(null, 8);
+  const decisions = {};
+  const similarPatterns = {};
+  candidates.forEach((candidate) => {
+    similarPatterns[candidate.candidate_id] = [];
+    decisions[candidate.candidate_id] = {
+      action: candidate.confidence > 0.66 ? "store_memory" : "ask_human",
+      reason: "Browser-side pattern search completed without the FastAPI backend.",
+      needs_human: candidate.confidence <= 0.66,
+      uncertainty: Number((1 - Math.max(candidate.confidence, candidate.anomaly_score)).toFixed(4)),
+    };
+  });
+  return {
+    run_id: uid("browser-run"),
+    image: {
+      image_id: uid("browser-image"),
+      filename: currentFileName || "browser-image",
+      width: currentImage.width,
+      height: currentImage.height,
+      mode: "RGB",
+      created_at: new Date().toISOString(),
+    },
+    candidates,
+    similar_patterns: similarPatterns,
+    decisions,
+    report: `Browser analysis run\nImage: ${currentFileName || "browser-image"} (${currentImage.width}x${currentImage.height})\nCandidates found: ${candidates.length}`,
+    created_at: new Date().toISOString(),
+  };
+}
+
+function browserDeepNode(candidate, depth, maxDepth, path) {
+  if (depth >= maxDepth) {
+    return { node_id: uid("browser-node"), depth, path, candidate, children: [] };
+  }
+  const children = browserCandidates(candidate.bbox, 3, "refined")
+    .filter((child) => child.anomaly_score >= 0.2)
+    .map((child, index) => browserDeepNode(child, depth + 1, maxDepth, `${path}.${index + 1}`));
+  return { node_id: uid("browser-node"), depth, path, candidate, children };
+}
+
+function browserDeepResult(maxDepth) {
+  const roots = browserCandidates(null, 4).map((candidate, index) => browserDeepNode(candidate, 0, maxDepth, String(index + 1)));
+  const nodes = flattenDeepNodes(roots);
+  return {
+    run_id: uid("browser-deep"),
+    image: {
+      image_id: uid("browser-image"),
+      filename: currentFileName || "browser-image",
+      width: currentImage.width,
+      height: currentImage.height,
+      mode: "RGB",
+      created_at: new Date().toISOString(),
+    },
+    max_depth: maxDepth,
+    nodes_searched: nodes.length,
+    root_candidates: roots,
+    report: `Browser deep search run\nImage: ${currentFileName || "browser-image"} (${currentImage.width}x${currentImage.height})\nDepth limit: ${maxDepth}; nodes searched: ${nodes.length}`,
+    created_at: new Date().toISOString(),
+  };
+}
+
 fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   currentResult = null;
@@ -387,6 +605,7 @@ fileInput.addEventListener("change", () => {
   updateMetrics();
   if (!file) {
     currentImage = null;
+    currentFileName = "";
     imageMetaEl.textContent = "No image selected";
     drawPreview();
     renderOverview();
@@ -395,6 +614,7 @@ fileInput.addEventListener("change", () => {
   const img = new Image();
   img.onload = () => {
     currentImage = img;
+    currentFileName = file.name;
     imageMetaEl.textContent = `${file.name} · ${img.width}×${img.height}`;
     drawPreview();
     renderOverview();
@@ -409,6 +629,16 @@ analyzeButton.addEventListener("click", async () => {
   analyzeButton.textContent = "Analyzing";
   try {
     currentResult = await apiFetch("/api/analyze", { method: "POST", body: form });
+  } catch (error) {
+    if (!error.browserFallback || !currentImage) {
+      findingsEl.innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`;
+      setView("findings");
+      return;
+    }
+    currentResult = browserAnalysisResult();
+    modelStateEl.textContent = LOCAL_MODEL_LABEL;
+  }
+  try {
     renderFindings(currentResult);
     reportEl.textContent = currentResult.report;
     drawProfile(profileItemsFromResult(currentResult));
@@ -434,6 +664,17 @@ deepButton.addEventListener("click", async () => {
   try {
     const depth = Math.max(1, Math.min(5, Number(depthInput.value || 3)));
     currentDeepResult = await apiFetch(`/api/deep-analyze?max_depth=${depth}`, { method: "POST", body: form });
+  } catch (error) {
+    if (!error.browserFallback || !currentImage) {
+      deepEl.innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`;
+      setView("deep");
+      return;
+    }
+    const depth = Math.max(1, Math.min(5, Number(depthInput.value || 3)));
+    currentDeepResult = browserDeepResult(depth);
+    modelStateEl.textContent = LOCAL_MODEL_LABEL;
+  }
+  try {
     renderDeep(currentDeepResult);
     reportEl.textContent = currentDeepResult.report;
     drawProfile(profileItemsFromDeep(currentDeepResult));

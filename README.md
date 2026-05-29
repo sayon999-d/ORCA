@@ -1,12 +1,13 @@
 ![Orca](assets/orca-banner.svg)
 
-Orca is a model-driven image intelligence dashboard. A CV perception layer finds unknown visual patterns, a COCO-backed baseline estimates novelty, and an agent layer decides whether to refine, remember, report, or ask for human validation.
+Orca is a model-driven image intelligence dashboard. It can run fully in the browser for static hosting, and it can optionally use the Python/OpenCV backend for stronger local analysis, COCO novelty scoring, memory, and human review.
 
 ![Orca pipeline architecture](assets/pipeline-architecture.svg)
 
 ## What It Includes
 
-- Typed Pydantic contracts for the pixel-to-agent bridge.
+- Static browser-side analyzer for GitHub Pages or any static host.
+- Optional typed Pydantic contracts for the Python pixel-to-agent bridge.
 - OpenCV perception engine that groups nearby visual evidence into pattern regions, then returns bounding boxes, anomaly scores, visual features, and embeddings.
 - Optional COCO-trained baseline model that learns normal image patch embeddings from `http://images.cocodataset.org/`.
 - Recursive deep search that zooms into suspicious regions, enhances crops, and builds a typed search tree.
@@ -15,9 +16,24 @@ Orca is a model-driven image intelligence dashboard. A CV perception layer finds
 - Dynamic refinement for low-confidence candidates.
 - JSONL vector memory with cosine similarity for recurring unknown patterns.
 - Human-in-the-loop review queue.
-- FastAPI backend and a browser dashboard for image upload, findings, reports, and review actions.
+- Browser dashboard for image upload, findings, reports, zoom, graphing, and review actions.
+- Optional FastAPI backend for local or hosted API analysis.
 
 ## Run
+
+### Static Browser Mode
+
+Open `static/index.html` through GitHub Pages or any static host. Analyze and Deep Search run in the browser using Canvas image processing when no API is reachable.
+
+Static mode supports:
+
+- Image upload.
+- Pattern-region detection.
+- Deep Search.
+- Canvas zoom and pan.
+- Pattern profile graph.
+
+### Optional Python API Mode
 
 ```bash
 python scripts/create_sample_images.py
@@ -46,7 +62,13 @@ Use the canvas zoom controls beside **Inspection**:
 - Mouse wheel zooms over the canvas.
 - Drag the canvas to pan when zoomed in.
 
-If Analyze or Deep Search fails, check that the FastAPI server is running and that the dashboard can reach `/api/health`.
+If no API is reachable, Orca automatically falls back to browser-side analysis. To use a hosted API from a static deployment, set:
+
+```js
+localStorage.setItem("ORCA_API_BASE", "https://your-orca-api.example.com")
+```
+
+Refresh the page after setting `ORCA_API_BASE`.
 
 ## Train A COCO Baseline
 
