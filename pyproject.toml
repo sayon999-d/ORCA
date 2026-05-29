@@ -1,0 +1,18 @@
+[project]
+name = "model-driven-anomaly-agent"
+version = "0.1.0"
+description = "A typed model-driven AI agent prototype for discovering unknown image patterns."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "pydantic",
+  "numpy",
+  "opencv-python-headless",
+  "pillow",
+  "python-multipart",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

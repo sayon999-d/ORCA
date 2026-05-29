@@ -1,0 +1,24 @@
+<svg width="1200" height="260" viewBox="0 0 1200 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="260" rx="28" fill="#050505"/>
+  <rect x="24" y="24" width="1152" height="212" rx="22" fill="#111317" stroke="#2D3036"/>
+  <path d="M178 76C207 48 254 48 283 76C312 104 312 150 283 178C254 206 207 206 178 178C149 150 149 104 178 76Z" stroke="#F7F7F8" stroke-width="10" stroke-dasharray="420" stroke-dashoffset="420">
+    <animate attributeName="stroke-dashoffset" from="420" to="0" dur="1.4s" fill="freeze"/>
+  </path>
+  <circle cx="232" cy="127" r="22" fill="#F7F7F8">
+    <animate attributeName="r" values="10;24;22" dur="1.1s" begin="0.7s" fill="freeze"/>
+  </circle>
+  <text x="352" y="142" fill="#F7F7F8" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="800" letter-spacing="0">
+    Orca
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="0.45s" fill="freeze"/>
+  </text>
+  <text x="356" y="180" fill="#A8A9AD" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">
+    Model-driven image intelligence
+    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="0.8s" fill="freeze"/>
+  </text>
+  <line x1="764" y1="126" x2="1016" y2="126" stroke="#5B5F68" stroke-width="3" stroke-dasharray="8 12">
+    <animate attributeName="stroke-dashoffset" from="120" to="0" dur="1.8s" repeatCount="indefinite"/>
+  </line>
+  <rect x="1036" y="98" width="80" height="56" rx="14" fill="#F7F7F8">
+    <animate attributeName="opacity" values="0.45;1;0.45" dur="2.2s" repeatCount="indefinite"/>
+  </rect>
+</svg>

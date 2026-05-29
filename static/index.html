@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orca</title>
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">O</div>
+          <div>
+            <strong>Orca</strong>
+            <span>Vision System</span>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-item active" data-view="overview">
+            <span>Overview</span>
+          </button>
+          <button class="nav-item" data-view="findings">
+            <span>Findings</span>
+          </button>
+          <button class="nav-item" data-view="deep">
+            <span>Deep Search</span>
+          </button>
+          <button class="nav-item" data-view="report">
+            <span>Report</span>
+          </button>
+          <button class="nav-item" data-view="reviews">
+            <span>Reviews</span>
+          </button>
+        </nav>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div class="title-row">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">Menu</button>
+            <div>
+            <h1>Orca</h1>
+            <p>Image Intelligence Dashboard</p>
+            </div>
+          </div>
+        </header>
+
+        <section class="toolbar">
+          <label class="file-control">
+            <span>Image</span>
+            <input id="fileInput" type="file" accept="image/*" />
+          </label>
+          <div class="toolbar-actions">
+            <label class="depth-control">
+              <span>Depth</span>
+              <input id="depthInput" type="number" min="1" max="5" value="3" />
+            </label>
+            <button id="analyzeButton">Analyze</button>
+            <button id="deepButton">Deep Search</button>
+          </div>
+        </section>
+
+        <section class="metrics-grid">
+          <article class="metric-card">
+            <span>Candidates</span>
+            <strong id="candidateCount">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Deep nodes</span>
+            <strong id="deepCount">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Reviews</span>
+            <strong id="reviewCount">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Model</span>
+            <strong id="modelState">Idle</strong>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel image-panel">
+            <header class="panel-header">
+              <div>
+                <strong>Inspection</strong>
+                <span id="imageMeta">No image selected</span>
+              </div>
+              <div class="canvas-tools" aria-label="Image zoom controls">
+                <button id="zoomOutButton" type="button">-</button>
+                <button id="zoomResetButton" type="button">100%</button>
+                <button id="zoomInButton" type="button">+</button>
+              </div>
+            </header>
+            <canvas id="previewCanvas" width="980" height="620"></canvas>
+            <section class="pattern-profile">
+              <header>
+                <div>
+                  <strong>Pattern profile</strong>
+                  <span id="profileMeta">No pattern data yet</span>
+                </div>
+              </header>
+              <canvas id="profileCanvas" width="980" height="180"></canvas>
+            </section>
+          </article>
+
+          <article class="panel side-panel">
+            <header class="panel-header">
+              <div>
+                <strong id="viewTitle">Overview</strong>
+                <span id="viewSubtitle">Current analysis state</span>
+              </div>
+              <span class="panel-menu">⋮</span>
+            </header>
+            <div id="overview" class="view active"></div>
+            <div id="findings" class="view"></div>
+            <div id="deep" class="view"></div>
+            <pre id="report" class="view"></pre>
+            <div id="reviews" class="view"></div>
+          </article>
+        </section>
+      </section>
+    </main>
+    <script src="static/app.js"></script>
+  </body>
+</html>

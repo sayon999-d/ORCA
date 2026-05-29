@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+.venv/
+.vscode/
+data/uploads/
+data/pattern_memory.jsonl
+data/review_queue.json
+data/coco/
+data/coco_baseline.json
+dist/

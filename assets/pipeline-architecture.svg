@@ -1,0 +1,56 @@
+<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="520" rx="26" fill="#FFFFFF"/>
+  <rect x="24" y="24" width="1152" height="472" rx="20" fill="#F7F7F8" stroke="#D9DBDF"/>
+  <text x="60" y="78" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800">Orca pipeline architecture</text>
+  <text x="60" y="112" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="18">Typed image evidence moves through perception, memory, agent reasoning, and review.</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5B5F68"/>
+    </marker>
+  </defs>
+
+  <rect x="58" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="84" y="216" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Image upload</text>
+  <text x="84" y="246" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Original pixels</text>
+
+  <rect x="292" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="318" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Perception</text>
+  <text x="318" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Pattern regions</text>
+  <text x="318" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Features and boxes</text>
+
+  <rect x="526" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="552" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">COCO baseline</text>
+  <text x="552" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Embedding search</text>
+  <text x="552" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Novelty score</text>
+
+  <rect x="760" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="786" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Agent</text>
+  <text x="786" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Decide action</text>
+  <text x="786" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Store or review</text>
+
+  <rect x="994" y="176" width="148" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="1020" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Dashboard</text>
+  <text x="1020" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Inspect</text>
+  <text x="1020" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Validate</text>
+
+  <line x1="236" y1="225" x2="288" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="470" y1="225" x2="522" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="704" y1="225" x2="756" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="938" y1="225" x2="990" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <rect x="292" y="348" width="178" height="92" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="318" y="383" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Deep search</text>
+  <text x="318" y="413" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Crop, enhance</text>
+  <text x="318" y="435" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Search again</text>
+
+  <rect x="760" y="348" width="178" height="92" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="786" y="383" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Memory</text>
+  <text x="786" y="413" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Recurring patterns</text>
+  <text x="786" y="435" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Human labels</text>
+
+  <path d="M381 274 V344" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M470 394 H728 C746 394 756 384 756 366 V276" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M849 274 V344" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M760 394 H614 C596 394 586 384 586 366 V278" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+</svg>
