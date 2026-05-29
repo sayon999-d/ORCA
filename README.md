@@ -23,7 +23,7 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 
 ### Static Browser Mode
 
-Open `static/index.html` through GitHub Pages or any static host. Analyze and Deep Search run in the browser using Canvas image processing when no API is reachable.
+Open `static/index.html` through GitHub Pages or any static host. Analyze and Deep Search run in the browser using Canvas image processing. On non-localhost static deployments, Orca does not call `/api/*` unless `ORCA_API_BASE` is explicitly configured.
 
 Static mode supports:
 

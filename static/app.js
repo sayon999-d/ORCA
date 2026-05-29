@@ -37,6 +37,9 @@ let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
 
 const API_BASE = window.ORCA_API_BASE || localStorage.getItem("ORCA_API_BASE") || "";
 const LOCAL_MODEL_LABEL = "Browser";
+const LOCAL_API_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
+const HAS_CONFIGURED_API = API_BASE.trim().length > 0;
+const CAN_USE_SAME_ORIGIN_API = ["http:", "https:"].includes(window.location.protocol) && LOCAL_API_HOSTS.has(window.location.hostname);
 
 const viewLabels = {
   overview: ["Overview", "Current analysis state"],
@@ -202,6 +205,9 @@ function setZoom(nextZoom, anchor = null) {
 }
 
 async function apiFetch(path, options = {}) {
+  if (!HAS_CONFIGURED_API && !CAN_USE_SAME_ORIGIN_API) {
+    throw browserFallbackError("Static deployment detected. Running browser analysis instead.");
+  }
   try {
     const res = await fetch(`${API_BASE}${path}`, options);
     if (!res.ok) {
@@ -217,12 +223,16 @@ async function apiFetch(path, options = {}) {
     return await res.json();
   } catch (error) {
     if (error instanceof TypeError) {
-      const offlineError = new Error("Orca API is not reachable. Running browser analysis instead.");
-      offlineError.browserFallback = true;
-      throw offlineError;
+      throw browserFallbackError("Orca API is not reachable. Running browser analysis instead.");
     }
     throw error;
   }
+}
+
+function browserFallbackError(message) {
+  const offlineError = new Error(message);
+  offlineError.browserFallback = true;
+  return offlineError;
 }
 
 function setView(view) {
@@ -257,7 +267,7 @@ async function refreshReviews() {
   try {
     reviews = await apiFetch("/api/reviews");
   } catch {
-    reviewsEl.innerHTML = '<p class="empty">Reviews unavailable while the API is offline.</p>';
+    reviewsEl.innerHTML = '<p class="empty">Server review queue is unavailable in browser mode.</p>';
     return;
   }
   reviewCountEl.textContent = reviews.filter((review) => review.status === "pending").length;
