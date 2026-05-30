@@ -10,3 +10,4 @@ data/review_queue.json
 data/coco/
 data/coco_baseline.json
 dist/
+.vercel
