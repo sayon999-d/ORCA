@@ -70,6 +70,46 @@ localStorage.setItem("ORCA_API_BASE", "https://your-orca-api.example.com")
 
 Refresh the page after setting `ORCA_API_BASE`.
 
+## Deploy The FastAPI API To Vercel
+
+The GitHub Pages dashboard is static. For the Python/OpenCV API, deploy the FastAPI backend separately to Vercel.
+
+This repo includes:
+
+- `api/index.py`: Vercel Python entrypoint that imports the FastAPI app.
+- `vercel.json`: routes all Vercel traffic to the FastAPI app.
+- `.vercelignore`: keeps local caches, uploads, and virtualenv files out of deployment.
+- `static/orca-config.js`: static dashboard API configuration file.
+
+Deploy:
+
+```bash
+vercel login
+vercel --prod
+```
+
+After deployment, copy the production URL, for example:
+
+```text
+https://orca-api.vercel.app
+```
+
+Then connect GitHub Pages to that API by adding a GitHub repository variable:
+
+```text
+ORCA_API_BASE=https://orca-api.vercel.app
+```
+
+The Pages workflow writes that value into `static/orca-config.js` during deployment.
+
+For stricter CORS on Vercel, set this Vercel environment variable:
+
+```text
+ORCA_ALLOWED_ORIGINS=https://sayon999-d.github.io
+```
+
+If `ORCA_API_BASE` is not set, Orca still works on GitHub Pages using browser-side Canvas analysis.
+
 ## Train A COCO Baseline
 
 COCO is large, so start with a tiny subset:

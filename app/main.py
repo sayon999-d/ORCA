@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import shutil
 import sys
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -18,7 +20,8 @@ from app.memory import ReviewQueue, VectorMemory
 from app.perception import PerceptionEngine
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data"
+DEFAULT_DATA_DIR = Path("/tmp/orca-data") if os.environ.get("VERCEL") else ROOT / "data"
+DATA_DIR = Path(os.environ.get("ORCA_DATA_DIR", DEFAULT_DATA_DIR))
 UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -29,6 +32,18 @@ review_queue = ReviewQueue(DATA_DIR / "review_queue.json")
 investigator = AnomalyInvestigator(perception, memory, review_queue)
 
 app = FastAPI(title="Orca", version="0.1.0")
+allowed_origins = [
+    origin.strip()
+    for origin in os.environ.get("ORCA_ALLOWED_ORIGINS", "*").split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
 

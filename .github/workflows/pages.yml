@@ -48,6 +48,11 @@ jobs:
           mkdir -p dist/static
           cp static/index.html dist/index.html
           cp static/app.js static/styles.css dist/static/
+          if [ -n "${{ vars.ORCA_API_BASE }}" ]; then
+            printf 'window.ORCA_API_BASE = "%s";\n' "${{ vars.ORCA_API_BASE }}" > dist/static/orca-config.js
+          else
+            cp static/orca-config.js dist/static/orca-config.js
+          fi
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
