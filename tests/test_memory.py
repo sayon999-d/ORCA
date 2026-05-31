@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import _repo_path  # noqa: F401
 from app.contracts import BoundingBox, PatternMemoryRecord, ReviewStatus
 from app.memory import VectorMemory
 
@@ -33,4 +34,3 @@ def test_vector_memory_merges_seen_count(tmp_path: Path) -> None:
 
     assert merged.seen_count == 2
     assert len(memory.all()) == 1
-

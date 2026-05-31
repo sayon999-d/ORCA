@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import _repo_path  # noqa: F401
 import cv2
 import numpy as np
 

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import _repo_path  # noqa: F401
 import cv2
 import numpy as np
 
@@ -49,4 +50,3 @@ def test_perception_includes_coco_novelty_when_baseline_exists(tmp_path: Path) -
     for candidate in candidates:
         assert candidate.baseline_similarity is not None
         assert candidate.model_novelty is not None
-
