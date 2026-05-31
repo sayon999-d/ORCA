@@ -31,7 +31,8 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
   background:
-    linear-gradient(135deg, rgba(235, 239, 243, 0.92), rgba(255, 255, 255, 0.96) 42%, rgba(238, 241, 236, 0.88));
+    linear-gradient(120deg, rgba(232, 237, 241, 0.92), rgba(255, 255, 255, 0.96) 42%, rgba(239, 242, 236, 0.9)),
+    linear-gradient(180deg, rgba(10, 14, 18, 0.04), rgba(255, 255, 255, 0));
 }
 
 button,
@@ -45,7 +46,7 @@ button {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 246px minmax(0, 1fr);
+  grid-template-columns: 236px minmax(0, 1fr);
   min-height: 100vh;
   margin: 0;
   border: 0;
@@ -65,8 +66,10 @@ button {
   grid-template-rows: auto 1fr;
   gap: 24px;
   min-height: 100%;
-  padding: 24px 18px;
-  background: rgba(0, 0, 0, 0.92);
+  padding: 24px 16px;
+  background:
+    linear-gradient(180deg, rgba(18, 20, 24, 0.96), rgba(0, 0, 0, 0.94)),
+    #050505;
   color: #fff;
   overflow: hidden;
   box-shadow: 16px 0 38px rgba(0, 0, 0, 0.22);
@@ -83,6 +86,8 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 8px 6px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brand-mark {
@@ -112,7 +117,7 @@ button {
 .nav {
   display: grid;
   align-content: start;
-  gap: 7px;
+  gap: 6px;
 }
 
 .nav-item {
@@ -121,7 +126,7 @@ button {
   min-height: 42px;
   border: 0;
   border-radius: 999px;
-  padding: 0 16px;
+  padding: 0 18px;
   background: transparent;
   color: var(--sidebar-muted);
   text-align: left;
@@ -132,14 +137,14 @@ button {
 .nav-item.active,
 .nav-item:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.12);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 26px rgba(0, 0, 0, 0.16);
   transform: translateX(4px);
 }
 
 .workspace {
   min-width: 0;
-  padding: 22px 24px 20px;
+  padding: 26px 26px 24px;
   background: transparent;
 }
 
@@ -159,16 +164,17 @@ button {
 
 h1 {
   margin: 0;
-  font-size: 1.65rem;
+  font-size: clamp(1.72rem, 2.3vw, 2.1rem);
   line-height: 1.1;
+  letter-spacing: 0;
 }
 
 .topbar p {
   margin: 4px 0 0;
   color: var(--muted);
+  font-weight: 520;
 }
 
-.toolbar,
 .toolbar-actions {
   display: flex;
   align-items: center;
@@ -176,12 +182,16 @@ h1 {
 }
 
 .toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.95fr) minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
   justify-content: space-between;
-  min-height: 50px;
+  min-height: 58px;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 8px 12px;
-  background: var(--panel);
+  border-radius: 20px;
+  padding: 10px 12px 10px 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.54));
   box-shadow: var(--glass-soft-shadow);
   backdrop-filter: blur(22px) saturate(1.28);
   -webkit-backdrop-filter: blur(22px) saturate(1.28);
@@ -193,13 +203,30 @@ h1 {
 .depth-control {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   color: var(--muted);
   font-weight: 700;
 }
 
 .file-control input {
   max-width: 280px;
+}
+
+.file-control input::file-selector-button {
+  min-height: 34px;
+  border: 1px solid rgba(20, 24, 31, 0.12);
+  border-radius: 999px;
+  padding: 0 12px;
+  margin-right: 9px;
+  color: #15171c;
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 760;
+  transition: background 260ms var(--ease-out), border-color 260ms var(--ease-out);
+}
+
+.file-control input::file-selector-button:hover {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(20, 24, 31, 0.22);
 }
 
 .prompt-control {
@@ -213,7 +240,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 0 14px;
-  background: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.66);
   outline: none;
   transition: border-color 260ms var(--ease-out), box-shadow 260ms var(--ease-out), background 260ms var(--ease-out);
 }
@@ -229,7 +256,7 @@ h1 {
   width: 58px;
   height: 34px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0 8px;
   background: rgba(255, 255, 255, 0.68);
   outline: none;
@@ -246,12 +273,12 @@ h1 {
   min-height: 36px;
   border: 0;
   border-radius: 999px;
-  padding: 0 18px;
+  padding: 0 20px;
   color: #fff;
   background: #050505;
   font-weight: 850;
   white-space: nowrap;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.13);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.16);
   transition: transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out), background 320ms var(--ease-out), filter 320ms var(--ease-out);
 }
 
@@ -295,15 +322,15 @@ h1 {
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .metric-card,
 .panel {
   border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--panel);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.54));
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(24px) saturate(1.22);
   -webkit-backdrop-filter: blur(24px) saturate(1.22);
@@ -313,7 +340,7 @@ h1 {
   display: grid;
   gap: 7px;
   min-height: 88px;
-  padding: 14px;
+  padding: 16px;
   transition: transform 360ms var(--ease-out), box-shadow 360ms var(--ease-out), background 360ms var(--ease-out);
 }
 
@@ -326,6 +353,7 @@ h1 {
 .metric-card span {
   color: var(--muted);
   font-size: 0.86rem;
+  font-weight: 620;
 }
 
 .metric-card strong {
@@ -336,7 +364,7 @@ h1 {
 .content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.55fr);
-  gap: 14px;
+  gap: 16px;
   align-items: start;
 }
 
@@ -350,9 +378,9 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px;
+  padding: 17px 18px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.38);
 }
 
 .panel-header strong {
@@ -374,7 +402,7 @@ h1 {
 .canvas-tools {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 
 .canvas-tools button {
@@ -390,12 +418,12 @@ h1 {
 
 #previewCanvas {
   display: block;
-  width: calc(100% - 24px);
+  width: calc(100% - 28px);
   aspect-ratio: 980 / 620;
-  margin: 12px;
-  border-radius: 14px;
+  margin: 14px;
+  border-radius: 18px;
   background: #15191f;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 48px rgba(0, 0, 0, 0.17);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075), 0 20px 54px rgba(0, 0, 0, 0.2);
   touch-action: none;
   cursor: grab;
 }
@@ -405,9 +433,9 @@ h1 {
 }
 
 .pattern-profile {
-  margin: 0 12px 12px;
+  margin: 0 14px 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 18px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.68);
   box-shadow: var(--glass-soft-shadow);
@@ -448,7 +476,7 @@ h1 {
   display: none;
   max-height: 720px;
   overflow: auto;
-  padding: 14px;
+  padding: 16px;
 }
 
 .view.active {
@@ -467,9 +495,9 @@ h1 {
 .session-card,
 .dataset-card {
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
-  margin-bottom: 10px;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 12px;
   background: rgba(255, 255, 255, 0.62);
   box-shadow: 0 12px 28px rgba(19, 24, 31, 0.06);
   backdrop-filter: blur(16px) saturate(1.16);
@@ -636,6 +664,16 @@ h1 {
 
 .deep-node {
   border-left: 4px solid rgba(91, 95, 104, 0.82);
+  position: relative;
+}
+
+.deep-node::before {
+  content: "";
+  position: absolute;
+  inset: 10px auto 10px -1px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f0a128, rgba(91, 95, 104, 0.82));
 }
 
 .deep-node.depth-1 {
@@ -706,11 +744,25 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
   .topbar,
-  .toolbar,
   .toolbar-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .file-control,
+  .prompt-control,
+  .depth-control {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .prompt-control {
+    min-width: 0;
   }
 }
 

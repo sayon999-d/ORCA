@@ -51,6 +51,7 @@ const API_BASE = window.ORCA_API_BASE || localStorage.getItem("ORCA_API_BASE") |
 const LOCAL_MODEL_LABEL = "Browser";
 const MAX_API_UPLOAD_BYTES = 3_200_000;
 const MAX_API_IMAGE_SIDE = 1800;
+const CANVAS_STAGE_PADDING = 18;
 const STORE_KEYS = {
   memory: "orca.patternMemory.v1",
   calibration: "orca.calibration.v1",
@@ -77,10 +78,14 @@ const viewLabels = {
 };
 
 function drawEmpty() {
-  ctx.fillStyle = "#15191f";
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, "#11151b");
+  gradient.addColorStop(0.55, "#161b22");
+  gradient.addColorStop(1, "#0d1117");
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#d8dde4";
-  ctx.font = "18px system-ui";
+  ctx.font = "700 18px system-ui";
   ctx.fillText("Orca inspection canvas", 32, 54);
 }
 
@@ -143,7 +148,9 @@ function drawProfile(items = []) {
 
 function imageFrame() {
   if (!currentImage) return null;
-  const baseScale = Math.min(canvas.width / currentImage.width, canvas.height / currentImage.height);
+  const stageWidth = canvas.width - CANVAS_STAGE_PADDING * 2;
+  const stageHeight = canvas.height - CANVAS_STAGE_PADDING * 2;
+  const baseScale = Math.min(stageWidth / currentImage.width, stageHeight / currentImage.height);
   const scale = baseScale * zoom;
   const width = currentImage.width * scale;
   const height = currentImage.height * scale;
@@ -177,15 +184,20 @@ function drawBox(frame, box, label, color) {
   const strokeHeight = Math.max(1, height - inset * 2);
 
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.09)";
-  ctx.fillRect(x, y, width, height);
-  ctx.shadowColor = "rgba(0, 0, 0, 0.34)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 2;
+  ctx.beginPath();
+  ctx.rect(imageLeft, imageTop, imageRight - imageLeft, imageBottom - imageTop);
+  ctx.clip();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.065)";
+  ctx.fillRect(strokeX, strokeY, strokeWidth, strokeHeight);
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.58)";
+  ctx.lineWidth = lineWidth + 2.4;
+  ctx.strokeRect(strokeX, strokeY, strokeWidth, strokeHeight);
   ctx.strokeStyle = color;
   ctx.lineWidth = lineWidth;
   ctx.strokeRect(strokeX, strokeY, strokeWidth, strokeHeight);
-  ctx.shadowColor = "transparent";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.42)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(strokeX + 1.5, strokeY + 1.5, Math.max(1, strokeWidth - 3), Math.max(1, strokeHeight - 3));
 
   if (width >= 48 && height >= 30) {
     const labelWidth = Math.min(132, Math.max(86, label.length * 7.2 + 16));
