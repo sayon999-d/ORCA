@@ -153,21 +153,57 @@ function imageFrame() {
 }
 
 function drawBox(frame, box, label, color) {
-  const x = frame.x + box.x_min * frame.scale;
-  const y = frame.y + box.y_min * frame.scale;
-  const width = (box.x_max - box.x_min) * frame.scale;
-  const height = (box.y_max - box.y_min) * frame.scale;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
+  const rawX = frame.x + box.x_min * frame.scale;
+  const rawY = frame.y + box.y_min * frame.scale;
+  const rawRight = frame.x + box.x_max * frame.scale;
+  const rawBottom = frame.y + box.y_max * frame.scale;
+  const imageLeft = Math.max(0, frame.x);
+  const imageTop = Math.max(0, frame.y);
+  const imageRight = Math.min(canvas.width, frame.x + frame.width);
+  const imageBottom = Math.min(canvas.height, frame.y + frame.height);
+  const x = clamp(rawX, imageLeft, imageRight);
+  const y = clamp(rawY, imageTop, imageBottom);
+  const right = clamp(rawRight, imageLeft, imageRight);
+  const bottom = clamp(rawBottom, imageTop, imageBottom);
+  const width = right - x;
+  const height = bottom - y;
+  if (width < 4 || height < 4) return;
+
+  const lineWidth = Math.min(3, Math.max(1.5, Math.min(width, height) / 12));
+  const inset = lineWidth / 2 + 0.75;
+  const strokeX = x + inset;
+  const strokeY = y + inset;
+  const strokeWidth = Math.max(1, width - inset * 2);
+  const strokeHeight = Math.max(1, height - inset * 2);
+
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.09)";
   ctx.fillRect(x, y, width, height);
+  ctx.shadowColor = "rgba(0, 0, 0, 0.34)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 2;
   ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(x, y, width, height);
-  if (width < 48 || height < 30) return;
-  ctx.fillStyle = "rgba(5, 5, 5, 0.88)";
-  ctx.fillRect(x, Math.max(frame.y, y - 25), 104, 23);
-  ctx.fillStyle = "#fff";
-  ctx.font = "13px system-ui";
-  ctx.fillText(label, x + 8, Math.max(frame.y + 16, y - 9));
+  ctx.lineWidth = lineWidth;
+  ctx.strokeRect(strokeX, strokeY, strokeWidth, strokeHeight);
+  ctx.shadowColor = "transparent";
+
+  if (width >= 48 && height >= 30) {
+    const labelWidth = Math.min(132, Math.max(86, label.length * 7.2 + 16));
+    const labelX = clamp(strokeX, 4, canvas.width - labelWidth - 4);
+    const labelY = clamp(strokeY - 28, imageTop + 4, canvas.height - 30);
+    ctx.fillStyle = "rgba(5, 5, 5, 0.78)";
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(labelX, labelY, labelWidth, 24, 8);
+      ctx.fill();
+    } else {
+      ctx.fillRect(labelX, labelY, labelWidth, 24);
+    }
+    ctx.fillStyle = "#fff";
+    ctx.font = "700 13px system-ui";
+    ctx.fillText(label, labelX + 8, labelY + 16);
+  }
+  ctx.restore();
 }
 
 function flattenDeepNodes(nodes, output = []) {
@@ -186,7 +222,7 @@ function drawPreview() {
 
   if (activeView === "deep" && currentDeepResult) {
     flattenDeepNodes(currentDeepResult.root_candidates).forEach((node) => {
-      const color = node.depth === 0 ? "#f5f5f5" : "#a8a9ad";
+      const color = node.depth === 0 ? "#f0a128" : "#e5e7eb";
       drawBox(frame, node.candidate.bbox, `${node.path} ${node.candidate.anomaly_score.toFixed(2)}`, color);
     });
     return;
@@ -194,7 +230,7 @@ function drawPreview() {
 
   if (currentResult) {
     currentResult.candidates.forEach((candidate, index) => {
-      const color = candidate.confidence < 0.58 ? "#d6a23d" : "#f5f5f5";
+      const color = candidate.confidence < 0.58 ? "#f0a128" : "#f8fafc";
       drawBox(frame, candidate.bbox, `Pattern ${index + 1}`, color);
     });
   }

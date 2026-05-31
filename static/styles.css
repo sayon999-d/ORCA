@@ -2,15 +2,19 @@
   color-scheme: light;
   --ink: #111317;
   --muted: #72757d;
-  --soft: #f7f7f8;
-  --panel: #ffffff;
-  --line: #e4e5e7;
+  --soft: rgba(247, 247, 248, 0.78);
+  --panel: rgba(255, 255, 255, 0.72);
+  --panel-strong: rgba(255, 255, 255, 0.88);
+  --line: rgba(20, 24, 31, 0.11);
   --sidebar: #050505;
   --sidebar-muted: #a8a9ad;
   --accent: #111317;
   --accent-2: #5b5f68;
-  --warn: #b7791f;
+  --warn: #c27718;
   --danger: #b42318;
+  --glass-shadow: 0 22px 60px rgba(19, 24, 31, 0.11);
+  --glass-soft-shadow: 0 14px 34px rgba(19, 24, 31, 0.08);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
@@ -26,7 +30,8 @@ body {
   min-height: 100vh;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
-  background: #fbfbfc;
+  background:
+    linear-gradient(135deg, rgba(235, 239, 243, 0.92), rgba(255, 255, 255, 0.96) 42%, rgba(238, 241, 236, 0.88));
 }
 
 button,
@@ -46,9 +51,9 @@ button {
   border: 0;
   border-radius: 0;
   overflow: hidden;
-  background: var(--panel);
+  background: rgba(255, 255, 255, 0.38);
   box-shadow: none;
-  transition: grid-template-columns 220ms ease;
+  transition: grid-template-columns 420ms var(--ease-out);
 }
 
 .app-shell.sidebar-hidden {
@@ -61,10 +66,11 @@ button {
   gap: 24px;
   min-height: 100%;
   padding: 24px 18px;
-  background: var(--sidebar);
+  background: rgba(0, 0, 0, 0.92);
   color: #fff;
   overflow: hidden;
-  transition: opacity 180ms ease, transform 220ms ease;
+  box-shadow: 16px 0 38px rgba(0, 0, 0, 0.22);
+  transition: opacity 320ms var(--ease-out), transform 420ms var(--ease-out);
 }
 
 .sidebar-hidden .sidebar {
@@ -86,7 +92,8 @@ button {
   height: 38px;
   border-radius: 14px;
   color: #fff;
-  background: linear-gradient(145deg, #111317, #434750);
+  background: linear-gradient(145deg, #111317, #30343c);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 14px 34px rgba(255, 255, 255, 0.06);
   font-weight: 900;
 }
 
@@ -119,20 +126,21 @@ button {
   color: var(--sidebar-muted);
   text-align: left;
   font-weight: 750;
-  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+  transition: background 280ms var(--ease-out), color 280ms var(--ease-out), transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out);
 }
 
 .nav-item.active,
 .nav-item:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.11);
-  transform: translateX(3px);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 14px 26px rgba(0, 0, 0, 0.16);
+  transform: translateX(4px);
 }
 
 .workspace {
   min-width: 0;
   padding: 22px 24px 20px;
-  background: #fbfbfc;
+  background: transparent;
 }
 
 .topbar {
@@ -171,9 +179,12 @@ h1 {
   justify-content: space-between;
   min-height: 50px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
   padding: 8px 12px;
-  background: #fff;
+  background: var(--panel);
+  box-shadow: var(--glass-soft-shadow);
+  backdrop-filter: blur(22px) saturate(1.28);
+  -webkit-backdrop-filter: blur(22px) saturate(1.28);
   margin-bottom: 14px;
 }
 
@@ -202,14 +213,26 @@ h1 {
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 0 14px;
+  background: rgba(255, 255, 255, 0.64);
+  outline: none;
+  transition: border-color 260ms var(--ease-out), box-shadow 260ms var(--ease-out), background 260ms var(--ease-out);
+}
+
+.prompt-control input:focus,
+.depth-control input:focus {
+  border-color: rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 4px rgba(17, 19, 23, 0.08);
 }
 
 .depth-control input {
   width: 58px;
   height: 34px;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 0 8px;
+  background: rgba(255, 255, 255, 0.68);
+  outline: none;
 }
 
 #analyzeButton,
@@ -227,8 +250,9 @@ h1 {
   color: #fff;
   background: #050505;
   font-weight: 850;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  transition: transform 170ms ease, box-shadow 170ms ease, background 170ms ease;
+  white-space: nowrap;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.13);
+  transition: transform 320ms var(--ease-out), box-shadow 320ms var(--ease-out), background 320ms var(--ease-out), filter 320ms var(--ease-out);
 }
 
 #deepButton {
@@ -245,7 +269,8 @@ h1 {
 .mini-button:hover {
   transform: translateY(-1px);
   background: #202226;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  filter: saturate(1.05);
 }
 
 #analyzeButton:active,
@@ -277,8 +302,11 @@ h1 {
 .metric-card,
 .panel {
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(24px) saturate(1.22);
+  -webkit-backdrop-filter: blur(24px) saturate(1.22);
 }
 
 .metric-card {
@@ -286,6 +314,13 @@ h1 {
   gap: 7px;
   min-height: 88px;
   padding: 14px;
+  transition: transform 360ms var(--ease-out), box-shadow 360ms var(--ease-out), background 360ms var(--ease-out);
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  background: var(--panel-strong);
+  box-shadow: 0 24px 54px rgba(19, 24, 31, 0.14);
 }
 
 .metric-card span {
@@ -317,6 +352,7 @@ h1 {
   gap: 12px;
   padding: 16px;
   border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.34);
 }
 
 .panel-header strong {
@@ -357,8 +393,9 @@ h1 {
   width: calc(100% - 24px);
   aspect-ratio: 980 / 620;
   margin: 12px;
-  border-radius: 7px;
+  border-radius: 14px;
   background: #15191f;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 18px 48px rgba(0, 0, 0, 0.17);
   touch-action: none;
   cursor: grab;
 }
@@ -370,9 +407,10 @@ h1 {
 .pattern-profile {
   margin: 0 12px 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 14px;
   overflow: hidden;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: var(--glass-soft-shadow);
 }
 
 .pattern-profile header {
@@ -415,6 +453,7 @@ h1 {
 
 .view.active {
   display: block;
+  animation: viewIn 420ms var(--ease-out);
 }
 
 .finding,
@@ -428,10 +467,30 @@ h1 {
 .session-card,
 .dataset-card {
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 14px;
   padding: 12px;
   margin-bottom: 10px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 12px 28px rgba(19, 24, 31, 0.06);
+  backdrop-filter: blur(16px) saturate(1.16);
+  -webkit-backdrop-filter: blur(16px) saturate(1.16);
+  transition: transform 340ms var(--ease-out), box-shadow 340ms var(--ease-out), background 340ms var(--ease-out), border-color 340ms var(--ease-out);
+}
+
+.finding:hover,
+.review:hover,
+.deep-node:hover,
+.overview-block:hover,
+.timeline-step:hover,
+.cluster-card:hover,
+.evidence-card:hover,
+.calibration-card:hover,
+.session-card:hover,
+.dataset-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(20, 24, 31, 0.17);
+  box-shadow: 0 18px 42px rgba(19, 24, 31, 0.1);
 }
 
 .finding header,
@@ -483,9 +542,20 @@ h1 {
 .field-row select {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 9px 10px;
   font: inherit;
+  background: rgba(255, 255, 255, 0.66);
+  outline: none;
+  transition: border-color 260ms var(--ease-out), box-shadow 260ms var(--ease-out), background 260ms var(--ease-out);
+}
+
+.field-row input:focus,
+.field-row textarea:focus,
+.field-row select:focus {
+  border-color: rgba(0, 0, 0, 0.28);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 4px rgba(17, 19, 23, 0.08);
 }
 
 .field-row textarea {
@@ -516,8 +586,9 @@ h1 {
 .evidence-card canvas {
   width: 100%;
   aspect-ratio: 1.4;
-  border-radius: 7px;
+  border-radius: 12px;
   background: #111317;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .calibration-grid {
@@ -537,7 +608,7 @@ h1 {
   max-height: 150px;
   object-fit: cover;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 12px;
   background: #111317;
   margin: 8px 0;
 }
@@ -550,7 +621,7 @@ h1 {
 
 .tag {
   border-radius: 999px;
-  background: #f0f1f3;
+  background: rgba(240, 241, 243, 0.74);
   color: #50545c;
   padding: 4px 8px;
   font-size: 0.78rem;
@@ -564,7 +635,7 @@ h1 {
 }
 
 .deep-node {
-  border-left: 4px solid var(--accent-2);
+  border-left: 4px solid rgba(91, 95, 104, 0.82);
 }
 
 .deep-node.depth-1 {
@@ -598,6 +669,27 @@ pre {
 
 .review-actions button.reject {
   background: var(--danger);
+}
+
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 @media (max-width: 1080px) {
