@@ -1,7 +1,9 @@
 const fileInput = document.querySelector("#fileInput");
 const depthInput = document.querySelector("#depthInput");
+const searchPromptInput = document.querySelector("#searchPromptInput");
 const analyzeButton = document.querySelector("#analyzeButton");
 const deepButton = document.querySelector("#deepButton");
+const saveSessionButton = document.querySelector("#saveSessionButton");
 const zoomOutButton = document.querySelector("#zoomOutButton");
 const zoomResetButton = document.querySelector("#zoomResetButton");
 const zoomInButton = document.querySelector("#zoomInButton");
@@ -13,6 +15,13 @@ const profileMetaEl = document.querySelector("#profileMeta");
 const overviewEl = document.querySelector("#overview");
 const findingsEl = document.querySelector("#findings");
 const deepEl = document.querySelector("#deep");
+const timelineEl = document.querySelector("#timeline");
+const clustersEl = document.querySelector("#clusters");
+const evidenceEl = document.querySelector("#evidence");
+const calibrationEl = document.querySelector("#calibration");
+const compareEl = document.querySelector("#compare");
+const datasetEl = document.querySelector("#dataset");
+const sessionsEl = document.querySelector("#sessions");
 const reportEl = document.querySelector("#report");
 const reviewsEl = document.querySelector("#reviews");
 const sidebarToggle = document.querySelector("#sidebarToggle");
@@ -28,6 +37,9 @@ let currentImage = null;
 let currentFileName = "";
 let currentResult = null;
 let currentDeepResult = null;
+let currentTimeline = [];
+let selectedCandidateId = null;
+let lastAnalysisMode = "idle";
 let activeView = "overview";
 let zoom = 1;
 let panX = 0;
@@ -37,6 +49,12 @@ let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
 
 const API_BASE = window.ORCA_API_BASE || localStorage.getItem("ORCA_API_BASE") || "";
 const LOCAL_MODEL_LABEL = "Browser";
+const STORE_KEYS = {
+  memory: "orca.patternMemory.v1",
+  calibration: "orca.calibration.v1",
+  sessions: "orca.sessions.v1",
+  dataset: "orca.dataset.v1",
+};
 const LOCAL_API_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
 const HAS_CONFIGURED_API = API_BASE.trim().length > 0;
 const CAN_USE_SAME_ORIGIN_API = ["http:", "https:"].includes(window.location.protocol) && LOCAL_API_HOSTS.has(window.location.hostname);
@@ -45,6 +63,13 @@ const viewLabels = {
   overview: ["Overview", "Current analysis state"],
   findings: ["Findings", "Candidate evidence"],
   deep: ["Deep Search", "Recursive search tree"],
+  timeline: ["Timeline", "Auditable investigation path"],
+  clusters: ["Clusters", "Recurring pattern groups"],
+  evidence: ["Evidence", "Candidate crop analysis"],
+  calibration: ["Calibration", "Feedback for confidence"],
+  compare: ["Compare", "Analyzer comparison"],
+  dataset: ["Dataset", "Training export builder"],
+  sessions: ["Sessions", "Saved project states"],
   report: ["Report", "Generated run summary"],
   reviews: ["Reviews", "Human validation queue"],
 };
@@ -189,6 +214,160 @@ function profileItemsFromDeep(result) {
   }));
 }
 
+function readStore(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStore(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function allCandidates() {
+  const primary = currentResult?.candidates || [];
+  const deep = flattenDeepNodes(currentDeepResult?.root_candidates || []).map((node) => node.candidate);
+  const byId = new Map();
+  [...primary, ...deep].forEach((candidate) => byId.set(candidate.candidate_id, candidate));
+  return [...byId.values()];
+}
+
+function candidateById(candidateId) {
+  return allCandidates().find((candidate) => candidate.candidate_id === candidateId) || allCandidates()[0] || null;
+}
+
+function localMemoryMatches(candidate, limit = 3) {
+  return readStore(STORE_KEYS.memory, [])
+    .map((item) => ({
+      label: item.labels?.[0] || item.label || "unlabeled pattern",
+      similarity: cosineSimilarity(item.embedding || [], candidate.embedding || []),
+    }))
+    .filter((item) => item.similarity > 0.78)
+    .sort((first, second) => second.similarity - first.similarity)
+    .slice(0, limit);
+}
+
+function cosineSimilarity(first = [], second = []) {
+  const length = Math.min(first.length, second.length);
+  let dot = 0;
+  let firstNorm = 0;
+  let secondNorm = 0;
+  for (let index = 0; index < length; index += 1) {
+    dot += first[index] * second[index];
+    firstNorm += first[index] * first[index];
+    secondNorm += second[index] * second[index];
+  }
+  const denominator = Math.sqrt(firstNorm) * Math.sqrt(secondNorm);
+  return denominator ? dot / denominator : 0;
+}
+
+function promptScore(candidate) {
+  const prompt = searchPromptInput.value.trim().toLowerCase();
+  if (!prompt) return 0;
+  const haystack = [
+    candidate.features?.descriptor || "",
+    candidate.model_novelty != null && candidate.model_novelty > 0.2 ? "novel unusual anomaly" : "",
+    candidate.confidence > 0.7 ? "confident clear" : "uncertain",
+    candidate.features?.edge_density > 0.14 ? "dense edges road grid fracture line network" : "",
+    candidate.features?.contrast > 45 ? "bright high contrast city light defect" : "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  const words = prompt.split(/\s+/).filter((word) => word.length > 2);
+  if (!words.length) return 0;
+  const matches = words.filter((word) => haystack.includes(word)).length;
+  return matches / words.length;
+}
+
+function applyPromptBias(candidates) {
+  return [...candidates].sort((first, second) => {
+    const firstScore = first.anomaly_score + promptScore(first) * 0.18;
+    const secondScore = second.anomaly_score + promptScore(second) * 0.18;
+    return secondScore - firstScore;
+  });
+}
+
+function investigationStep(type, title, detail, candidate = null) {
+  currentTimeline.push({
+    id: uid("step"),
+    type,
+    title,
+    detail,
+    candidate_id: candidate?.candidate_id || null,
+    score: candidate?.anomaly_score ?? null,
+    confidence: candidate?.confidence ?? null,
+    created_at: new Date().toISOString(),
+  });
+}
+
+function rememberCandidates(candidates, label = "unlabeled pattern") {
+  const memory = readStore(STORE_KEYS.memory, []);
+  candidates.forEach((candidate) => {
+    const existing = memory.find((item) => cosineSimilarity(item.embedding, candidate.embedding) > 0.9);
+    if (existing) {
+      existing.count += 1;
+      existing.last_seen = new Date().toISOString();
+      existing.score = Math.max(existing.score, candidate.anomaly_score);
+      existing.labels = Array.from(new Set([...(existing.labels || []), label].filter(Boolean)));
+    } else {
+      memory.push({
+        id: uid("memory"),
+        label,
+        labels: label ? [label] : [],
+        count: 1,
+        score: candidate.anomaly_score,
+        confidence: candidate.confidence,
+        embedding: candidate.embedding,
+        descriptor: candidate.features?.descriptor || "",
+        created_at: new Date().toISOString(),
+        last_seen: new Date().toISOString(),
+      });
+    }
+  });
+  writeStore(STORE_KEYS.memory, memory);
+}
+
+function addDatasetItem(candidate, label, split = "uncertain") {
+  const dataset = readStore(STORE_KEYS.dataset, []);
+  dataset.push({
+    id: uid("dataset"),
+    image: currentFileName || "image",
+    label,
+    split,
+    bbox: candidate.bbox,
+    score: candidate.anomaly_score,
+    confidence: candidate.confidence,
+    descriptor: candidate.features?.descriptor || "",
+    created_at: new Date().toISOString(),
+  });
+  writeStore(STORE_KEYS.dataset, dataset);
+}
+
+function addCalibration(candidate, status) {
+  const calibration = readStore(STORE_KEYS.calibration, []);
+  calibration.push({
+    id: uid("calibration"),
+    candidate_id: candidate.candidate_id,
+    image: currentFileName || "image",
+    status,
+    score: candidate.anomaly_score,
+    confidence: candidate.confidence,
+    created_at: new Date().toISOString(),
+  });
+  writeStore(STORE_KEYS.calibration, calibration);
+  if (status === "true_positive") addDatasetItem(candidate, "accepted-pattern", "positive");
+  if (status === "false_positive") addDatasetItem(candidate, "rejected-pattern", "negative");
+  if (status === "uncertain") addDatasetItem(candidate, "uncertain-pattern", "uncertain");
+  if (status === "ignored") addDatasetItem(candidate, "ignored-pattern", "ignored");
+}
+
 function setZoom(nextZoom, anchor = null) {
   const previousZoom = zoom;
   zoom = Math.max(1, Math.min(8, Number(nextZoom.toFixed(2))));
@@ -251,6 +430,17 @@ function updateMetrics(health = null) {
     reviewCountEl.textContent = health.pending_reviews;
     modelStateEl.textContent = health.coco_baseline?.trained ? "COCO" : "Local";
   }
+}
+
+function refreshAllViews() {
+  renderOverview();
+  renderTimeline();
+  renderClusters();
+  renderEvidence();
+  renderCalibration();
+  renderCompare();
+  renderDataset();
+  renderSessions();
 }
 
 async function refreshHealth() {
@@ -319,6 +509,373 @@ function renderOverview() {
     </article>`;
 }
 
+function renderTimeline() {
+  if (!currentTimeline.length) {
+    timelineEl.innerHTML = '<p class="empty">No investigation timeline yet.</p>';
+    return;
+  }
+  timelineEl.innerHTML = currentTimeline
+    .map((step, index) => `
+      <article class="timeline-step">
+        <strong>${index + 1}. ${escapeHtml(step.title)}</strong>
+        <span>${escapeHtml(step.detail)}</span>
+        ${step.score == null ? "" : `<span>score ${step.score.toFixed(2)} · confidence ${step.confidence.toFixed(2)}</span>`}
+      </article>`)
+    .join("");
+}
+
+function renderClusters() {
+  const memory = readStore(STORE_KEYS.memory, []);
+  if (!memory.length) {
+    clustersEl.innerHTML = '<p class="empty">No recurring pattern clusters yet. Run analysis or label findings to build memory.</p>';
+    return;
+  }
+  clustersEl.innerHTML = memory
+    .sort((first, second) => second.count - first.count)
+    .map((cluster) => `
+      <article class="cluster-card">
+        <header>
+          <strong>${escapeHtml(cluster.labels?.[0] || cluster.label || "unlabeled pattern")}</strong>
+          <span class="score">${cluster.count} seen</span>
+        </header>
+        <div class="meta">
+          <span>${escapeHtml(cluster.descriptor || "No descriptor")}</span>
+          <span>best score ${Number(cluster.score || 0).toFixed(2)} · confidence ${Number(cluster.confidence || 0).toFixed(2)}</span>
+          <span>last seen ${new Date(cluster.last_seen).toLocaleString()}</span>
+        </div>
+        <div class="tag-list">${(cluster.labels || []).map((label) => `<span class="tag">${escapeHtml(label)}</span>`).join("")}</div>
+      </article>`)
+    .join("");
+}
+
+function renderEvidence() {
+  const candidate = candidateById(selectedCandidateId);
+  if (!candidate || !currentImage) {
+    evidenceEl.innerHTML = '<p class="empty">Select or run a candidate to inspect evidence crops.</p>';
+    return;
+  }
+  const matchingNodes = flattenDeepNodes(currentDeepResult?.root_candidates || []).filter((node) => node.candidate.candidate_id === candidate.candidate_id);
+  evidenceEl.innerHTML = `
+    <article class="evidence-card">
+      <strong>Candidate evidence</strong>
+      <span class="meta">score ${candidate.anomaly_score.toFixed(2)} · confidence ${candidate.confidence.toFixed(2)}</span>
+      <div class="evidence-grid">
+        <div><span class="meta">Original crop</span><canvas id="evidenceOriginal" width="320" height="220"></canvas></div>
+        <div><span class="meta">Enhanced crop</span><canvas id="evidenceEnhanced" width="320" height="220"></canvas></div>
+        <div><span class="meta">Edge map</span><canvas id="evidenceEdges" width="320" height="220"></canvas></div>
+        <div><span class="meta">Heatmap</span><canvas id="evidenceHeatmap" width="320" height="220"></canvas></div>
+      </div>
+      <div class="meta">
+        <strong>Deep-search result</strong>
+        <span>${matchingNodes.length ? `${matchingNodes.length} related deep node(s) available` : "Run Deep Search to attach recursive evidence."}</span>
+      </div>
+    </article>`;
+  drawEvidenceCanvases(candidate);
+}
+
+function renderCalibration() {
+  const candidate = candidateById(selectedCandidateId);
+  const calibration = readStore(STORE_KEYS.calibration, []);
+  const counts = calibration.reduce((acc, item) => {
+    acc[item.status] = (acc[item.status] || 0) + 1;
+    return acc;
+  }, {});
+  calibrationEl.innerHTML = `
+    <article class="calibration-card">
+      <strong>Confidence calibration</strong>
+      <span class="meta">True ${counts.true_positive || 0} · False ${counts.false_positive || 0} · Uncertain ${counts.uncertain || 0} · Ignored ${counts.ignored || 0}</span>
+      ${
+        candidate
+          ? `<div class="action-row">
+              <button data-calibration="true_positive">True positive</button>
+              <button data-calibration="false_positive">False positive</button>
+              <button data-calibration="uncertain">Uncertain</button>
+              <button data-calibration="ignored">Ignored</button>
+            </div>`
+          : '<span class="empty">No selected candidate.</span>'
+      }
+    </article>
+    <div class="calibration-grid">
+      ${["true_positive", "false_positive", "uncertain", "ignored"].map((status) => `
+        <article class="calibration-card">
+          <strong>${status.replace("_", " ")}</strong>
+          <span>${counts[status] || 0} records</span>
+        </article>`).join("")}
+    </div>`;
+}
+
+function renderCompare() {
+  const candidates = allCandidates();
+  const browserAvg = candidates.length ? candidates.reduce((sum, item) => sum + item.anomaly_score, 0) / candidates.length : 0;
+  const confidenceAvg = candidates.length ? candidates.reduce((sum, item) => sum + item.confidence, 0) / candidates.length : 0;
+  const noveltyAvg = candidates.length ? candidates.reduce((sum, item) => sum + (item.model_novelty || 0), 0) / candidates.length : 0;
+  const calibration = readStore(STORE_KEYS.calibration, []);
+  const trueCount = calibration.filter((item) => item.status === "true_positive").length;
+  const falseCount = calibration.filter((item) => item.status === "false_positive").length;
+  const calibratedLift = calibration.length ? (trueCount - falseCount) / calibration.length : 0;
+  compareEl.innerHTML = `
+    <article class="overview-block">
+      <strong>Model comparison</strong>
+      <span>Active mode: ${escapeHtml(lastAnalysisMode)}</span>
+      <span>Browser analyzer average score: ${browserAvg.toFixed(2)}</span>
+      <span>FastAPI/OpenCV: ${API_BASE ? "configured" : "not configured"}</span>
+      <span>COCO novelty average: ${noveltyAvg.toFixed(2)}</span>
+      <span>Confidence average: ${confidenceAvg.toFixed(2)}</span>
+      <span>Calibration lift: ${calibratedLift >= 0 ? "+" : ""}${calibratedLift.toFixed(2)}</span>
+      <span>Future custom model: ready slot</span>
+    </article>`;
+}
+
+function renderDataset() {
+  const dataset = readStore(STORE_KEYS.dataset, []);
+  datasetEl.innerHTML = `
+    <article class="dataset-card">
+      <header>
+        <strong>Dataset builder</strong>
+        <span class="score">${dataset.length} items</span>
+      </header>
+      <div class="action-row">
+        <button id="exportJsonButton">Export JSON</button>
+        <button id="exportCsvButton">Export CSV</button>
+        <button id="exportYoloButton">Export YOLO</button>
+        <button id="exportCocoButton">Export COCO</button>
+        <button id="exportPngButton">Annotated PNG</button>
+        <button id="exportPdfButton">PDF report</button>
+      </div>
+    </article>
+    ${dataset.slice(-12).reverse().map((item) => `
+      <article class="dataset-card">
+        <strong>${escapeHtml(item.label)}</strong>
+        <span class="meta">${escapeHtml(item.split)} · ${escapeHtml(item.image)} · score ${Number(item.score).toFixed(2)}</span>
+      </article>`).join("")}`;
+}
+
+function drawCropToCanvas(targetCanvas, candidate, mode = "original") {
+  const targetCtx = targetCanvas.getContext("2d");
+  const box = candidate.bbox;
+  const width = Math.max(1, box.x_max - box.x_min);
+  const height = Math.max(1, box.y_max - box.y_min);
+  targetCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+  targetCtx.drawImage(currentImage, box.x_min, box.y_min, width, height, 0, 0, targetCanvas.width, targetCanvas.height);
+  const imageData = targetCtx.getImageData(0, 0, targetCanvas.width, targetCanvas.height);
+  const data = imageData.data;
+  if (mode === "enhanced") {
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = clamp((data[i] - 35) * 1.35 + 35, 0, 255);
+      data[i + 1] = clamp((data[i + 1] - 35) * 1.35 + 35, 0, 255);
+      data[i + 2] = clamp((data[i + 2] - 35) * 1.35 + 35, 0, 255);
+    }
+  }
+  if (mode === "edges" || mode === "heatmap") {
+    for (let y = 0; y < targetCanvas.height; y += 1) {
+      for (let x = 0; x < targetCanvas.width; x += 1) {
+        const i = (y * targetCanvas.width + x) * 4;
+        const current = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        const rightIndex = (y * targetCanvas.width + Math.min(targetCanvas.width - 1, x + 1)) * 4;
+        const downIndex = (Math.min(targetCanvas.height - 1, y + 1) * targetCanvas.width + x) * 4;
+        const right = (data[rightIndex] + data[rightIndex + 1] + data[rightIndex + 2]) / 3;
+        const down = (data[downIndex] + data[downIndex + 1] + data[downIndex + 2]) / 3;
+        const edge = clamp((Math.abs(current - right) + Math.abs(current - down)) / 90, 0, 1);
+        if (mode === "edges") {
+          const value = edge * 255;
+          data[i] = value;
+          data[i + 1] = value;
+          data[i + 2] = value;
+        } else {
+          data[i] = Math.max(data[i], edge * 255);
+          data[i + 1] *= 0.55;
+          data[i + 2] *= 0.45;
+        }
+      }
+    }
+  }
+  targetCtx.putImageData(imageData, 0, 0);
+}
+
+function drawEvidenceCanvases(candidate) {
+  drawCropToCanvas(document.querySelector("#evidenceOriginal"), candidate, "original");
+  drawCropToCanvas(document.querySelector("#evidenceEnhanced"), candidate, "enhanced");
+  drawCropToCanvas(document.querySelector("#evidenceEdges"), candidate, "edges");
+  drawCropToCanvas(document.querySelector("#evidenceHeatmap"), candidate, "heatmap");
+}
+
+function downloadFile(filename, content, type = "application/json") {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportJson() {
+  downloadFile("orca-evidence.json", JSON.stringify({ result: currentResult, deep: currentDeepResult, timeline: currentTimeline, dataset: readStore(STORE_KEYS.dataset, []) }, null, 2));
+}
+
+function exportCsv() {
+  const rows = [["image", "label", "split", "x_min", "y_min", "x_max", "y_max", "score", "confidence"]];
+  const dataset = readStore(STORE_KEYS.dataset, []);
+  const sourceRows = dataset.length
+    ? dataset
+    : allCandidates().map((candidate, index) => ({
+        image: currentFileName || "image",
+        label: `candidate-${index + 1}`,
+        split: "candidate",
+        bbox: candidate.bbox,
+        score: candidate.anomaly_score,
+        confidence: candidate.confidence,
+      }));
+  sourceRows.forEach((item) => {
+    rows.push([item.image, item.label, item.split, item.bbox.x_min, item.bbox.y_min, item.bbox.x_max, item.bbox.y_max, item.score, item.confidence]);
+  });
+  downloadFile("orca-dataset.csv", rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n"), "text/csv");
+}
+
+function exportYolo() {
+  const lines = readStore(STORE_KEYS.dataset, []).map((item) => {
+    const box = item.bbox;
+    const cx = ((box.x_min + box.x_max) / 2) / Math.max(1, currentImage?.width || 1);
+    const cy = ((box.y_min + box.y_max) / 2) / Math.max(1, currentImage?.height || 1);
+    const width = (box.x_max - box.x_min) / Math.max(1, currentImage?.width || 1);
+    const height = (box.y_max - box.y_min) / Math.max(1, currentImage?.height || 1);
+    return `0 ${cx.toFixed(6)} ${cy.toFixed(6)} ${width.toFixed(6)} ${height.toFixed(6)}`;
+  });
+  downloadFile("orca-yolo.txt", lines.join("\n"), "text/plain");
+}
+
+function exportCoco() {
+  const dataset = readStore(STORE_KEYS.dataset, []);
+  const images = [{ id: 1, file_name: currentFileName || "image", width: currentImage?.width || 0, height: currentImage?.height || 0 }];
+  const annotations = dataset.map((item, index) => ({
+    id: index + 1,
+    image_id: 1,
+    category_id: 1,
+    bbox: [item.bbox.x_min, item.bbox.y_min, item.bbox.x_max - item.bbox.x_min, item.bbox.y_max - item.bbox.y_min],
+    area: (item.bbox.x_max - item.bbox.x_min) * (item.bbox.y_max - item.bbox.y_min),
+    iscrowd: 0,
+  }));
+  downloadFile("orca-coco.json", JSON.stringify({ images, annotations, categories: [{ id: 1, name: "pattern" }] }, null, 2));
+}
+
+function exportAnnotatedPng() {
+  if (!currentImage) return;
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = canvas.width;
+  exportCanvas.height = canvas.height;
+  const exportCtx = exportCanvas.getContext("2d");
+  exportCtx.drawImage(canvas, 0, 0);
+  exportCanvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "orca-annotated.png";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+function exportPdfReport() {
+  const popup = window.open("", "_blank");
+  if (!popup) return;
+  popup.document.write(`<pre style="font:14px/1.45 system-ui; white-space:pre-wrap">${escapeHtml(reportEl.textContent || "No report")}</pre>`);
+  popup.document.close();
+  popup.focus();
+  popup.print();
+}
+
+function sessionThumbnail() {
+  if (!currentImage) return "";
+  const thumb = document.createElement("canvas");
+  thumb.width = 220;
+  thumb.height = 140;
+  const thumbCtx = thumb.getContext("2d");
+  thumbCtx.fillStyle = "#111317";
+  thumbCtx.fillRect(0, 0, thumb.width, thumb.height);
+  const scale = Math.min(thumb.width / currentImage.width, thumb.height / currentImage.height);
+  const width = currentImage.width * scale;
+  const height = currentImage.height * scale;
+  thumbCtx.drawImage(currentImage, (thumb.width - width) / 2, (thumb.height - height) / 2, width, height);
+  return thumb.toDataURL("image/jpeg", 0.72);
+}
+
+function sessionImageData() {
+  if (!currentImage) return "";
+  const maxSide = 1300;
+  const scale = Math.min(1, maxSide / Math.max(currentImage.width, currentImage.height));
+  const imageCanvas = document.createElement("canvas");
+  imageCanvas.width = Math.max(1, Math.round(currentImage.width * scale));
+  imageCanvas.height = Math.max(1, Math.round(currentImage.height * scale));
+  const imageCtx = imageCanvas.getContext("2d");
+  imageCtx.drawImage(currentImage, 0, 0, imageCanvas.width, imageCanvas.height);
+  return imageCanvas.toDataURL("image/jpeg", 0.86);
+}
+
+function renderSessions() {
+  const sessions = readStore(STORE_KEYS.sessions, []);
+  sessionsEl.innerHTML = `
+    <article class="session-card">
+      <strong>Project sessions</strong>
+      <span class="meta">${sessions.length} saved sessions</span>
+    </article>
+    ${sessions.slice().reverse().map((session) => `
+      <article class="session-card">
+        <header>
+          <strong>${escapeHtml(session.name)}</strong>
+          <span>${new Date(session.created_at).toLocaleString()}</span>
+        </header>
+        ${session.thumbnail ? `<img class="session-thumb" src="${session.thumbnail}" alt="" />` : ""}
+        <div class="meta">
+          <span>${session.candidates} candidates · ${session.deep_nodes} deep nodes</span>
+          <span>${escapeHtml(session.notes || "No notes")}</span>
+        </div>
+        <div class="action-row">
+          <button data-open-session="${session.id}">Open session</button>
+        </div>
+      </article>`).join("")}`;
+}
+
+function openSession(sessionId) {
+  const sessions = readStore(STORE_KEYS.sessions, []);
+  const session = sessions.find((item) => item.id === sessionId);
+  if (!session) return;
+  currentResult = session.result || null;
+  currentDeepResult = session.deep || null;
+  currentTimeline = session.timeline || [];
+  currentFileName = session.name || "saved-session";
+  selectedCandidateId = currentResult?.candidates?.[0]?.candidate_id || currentDeepResult?.root_candidates?.[0]?.candidate?.candidate_id || null;
+  lastAnalysisMode = "Saved session";
+  searchPromptInput.value = session.notes || "";
+  if (session.image_data) {
+    const image = new Image();
+    image.onload = () => {
+      currentImage = image;
+      imageMetaEl.textContent = `${currentFileName} · ${image.width}×${image.height}`;
+      setZoom(1);
+      drawPreview();
+      drawProfile(currentDeepResult ? profileItemsFromDeep(currentDeepResult) : profileItemsFromResult(currentResult));
+      renderFindings(currentResult);
+      renderDeep(currentDeepResult);
+      reportEl.textContent = currentDeepResult?.report || currentResult?.report || "";
+      refreshAllViews();
+      updateMetrics();
+      setView("overview");
+    };
+    image.src = session.image_data;
+    return;
+  }
+  imageMetaEl.textContent = `${currentFileName} · image not embedded`;
+  drawPreview();
+  drawProfile(currentDeepResult ? profileItemsFromDeep(currentDeepResult) : profileItemsFromResult(currentResult));
+  renderFindings(currentResult);
+  renderDeep(currentDeepResult);
+  reportEl.textContent = currentDeepResult?.report || currentResult?.report || "";
+  refreshAllViews();
+  updateMetrics();
+  setView("overview");
+}
+
 function renderFindings(result) {
   if (!result?.candidates.length) {
     findingsEl.innerHTML = '<p class="empty">No findings.</p>';
@@ -326,9 +883,11 @@ function renderFindings(result) {
   }
   findingsEl.innerHTML = result.candidates
     .map((candidate, index) => {
-      const decision = result.decisions[candidate.candidate_id];
-      const matches = result.similar_patterns[candidate.candidate_id] || [];
-      const match = matches.length ? `${matches[0].label} · ${matches[0].similarity.toFixed(2)}` : "none";
+      const decision = result.decisions?.[candidate.candidate_id] || { action: "review", reason: "No decision metadata was attached." };
+      const matches = result.similar_patterns?.[candidate.candidate_id] || [];
+      const localMatches = localMemoryMatches(candidate);
+      const mergedMatches = matches.length ? matches : localMatches;
+      const match = mergedMatches.length ? `${mergedMatches[0].label} · ${mergedMatches[0].similarity.toFixed(2)}` : "none";
       return `
         <article class="finding">
           <header>
@@ -341,6 +900,15 @@ function renderFindings(result) {
             <span>${candidate.features.descriptor}</span>
             <span>Memory match: ${match}</span>
             <span class="decision">${decision.action}: ${decision.reason}</span>
+          </div>
+          <div class="field-row">
+            <input data-label-for="${candidate.candidate_id}" type="text" placeholder="Rename pattern, e.g. road network" />
+          </div>
+          <div class="action-row">
+            <button data-select-candidate="${candidate.candidate_id}">Inspect evidence</button>
+            <button data-save-label="${candidate.candidate_id}">Save label</button>
+            <button data-add-dataset="${candidate.candidate_id}" data-split="positive">Add positive</button>
+            <button data-add-dataset="${candidate.candidate_id}" data-split="negative">Add negative</button>
           </div>
         </article>`;
     })
@@ -378,7 +946,7 @@ function renderDeep(result) {
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
 }
 
 function selectedFormData() {
@@ -542,7 +1110,7 @@ function browserCandidates(region = null, limit = 8, sourcePass = "browser") {
 }
 
 function browserAnalysisResult() {
-  const candidates = browserCandidates(null, 8);
+  const candidates = applyPromptBias(browserCandidates(null, 8));
   const decisions = {};
   const similarPatterns = {};
   candidates.forEach((candidate) => {
@@ -583,7 +1151,7 @@ function browserDeepNode(candidate, depth, maxDepth, path) {
 }
 
 function browserDeepResult(maxDepth) {
-  const roots = browserCandidates(null, 4).map((candidate, index) => browserDeepNode(candidate, 0, maxDepth, String(index + 1)));
+  const roots = applyPromptBias(browserCandidates(null, 4)).map((candidate, index) => browserDeepNode(candidate, 0, maxDepth, String(index + 1)));
   const nodes = flattenDeepNodes(roots);
   return {
     run_id: uid("browser-deep"),
@@ -607,6 +1175,8 @@ fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   currentResult = null;
   currentDeepResult = null;
+  currentTimeline = [];
+  selectedCandidateId = null;
   setZoom(1);
   drawProfile();
   renderFindings(null);
@@ -637,8 +1207,15 @@ analyzeButton.addEventListener("click", async () => {
   if (!form) return;
   analyzeButton.disabled = true;
   analyzeButton.textContent = "Analyzing";
+  currentTimeline = [];
+  investigationStep("input", "Image uploaded", currentFileName || "Selected image");
+  if (searchPromptInput.value.trim()) {
+    investigationStep("prompt", "Open-vocabulary note applied", searchPromptInput.value.trim());
+  }
   try {
     currentResult = await apiFetch("/api/analyze", { method: "POST", body: form });
+    currentResult.candidates = applyPromptBias(currentResult.candidates);
+    lastAnalysisMode = "FastAPI/OpenCV";
   } catch (error) {
     if (!error.browserFallback || !currentImage) {
       findingsEl.innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`;
@@ -646,13 +1223,18 @@ analyzeButton.addEventListener("click", async () => {
       return;
     }
     currentResult = browserAnalysisResult();
+    lastAnalysisMode = "Browser";
     modelStateEl.textContent = LOCAL_MODEL_LABEL;
   }
   try {
+    investigationStep("perception", "First-pass pattern regions", `${currentResult.candidates.length} candidates found`);
+    currentResult.candidates.forEach((candidate, index) => investigationStep("candidate", `Pattern region ${index + 1}`, candidate.features?.descriptor || "Pattern evidence", candidate));
+    rememberCandidates(currentResult.candidates);
+    selectedCandidateId = currentResult.candidates[0]?.candidate_id || null;
     renderFindings(currentResult);
     reportEl.textContent = currentResult.report;
     drawProfile(profileItemsFromResult(currentResult));
-    renderOverview();
+    refreshAllViews();
     updateMetrics();
     setView("findings");
     await refreshHealth();
@@ -671,9 +1253,16 @@ deepButton.addEventListener("click", async () => {
   if (!form) return;
   deepButton.disabled = true;
   deepButton.textContent = "Searching";
+  investigationStep("deep_start", "Deep Search started", `Depth ${Math.max(1, Math.min(5, Number(depthInput.value || 3)))}`);
   try {
     const depth = Math.max(1, Math.min(5, Number(depthInput.value || 3)));
     currentDeepResult = await apiFetch(`/api/deep-analyze?max_depth=${depth}`, { method: "POST", body: form });
+    const originalNodes = currentDeepResult.root_candidates || [];
+    currentDeepResult.root_candidates = applyPromptBias(originalNodes.map((node) => node.candidate)).map((candidate, index) => {
+      const node = originalNodes.find((item) => item.candidate.candidate_id === candidate.candidate_id);
+      return { ...(node || { node_id: uid("node"), depth: 0, children: [] }), path: String(index + 1), candidate };
+    });
+    lastAnalysisMode = "FastAPI/OpenCV deep";
   } catch (error) {
     if (!error.browserFallback || !currentImage) {
       deepEl.innerHTML = `<p class="empty">${escapeHtml(error.message)}</p>`;
@@ -682,13 +1271,18 @@ deepButton.addEventListener("click", async () => {
     }
     const depth = Math.max(1, Math.min(5, Number(depthInput.value || 3)));
     currentDeepResult = browserDeepResult(depth);
+    lastAnalysisMode = "Browser deep";
     modelStateEl.textContent = LOCAL_MODEL_LABEL;
   }
   try {
+    investigationStep("deep_result", "Deep Search tree built", `${currentDeepResult.nodes_searched} nodes searched`);
+    flattenDeepNodes(currentDeepResult.root_candidates).forEach((node) => investigationStep("deep_node", `Deep node ${node.path}`, node.candidate.features?.descriptor || "Recursive evidence", node.candidate));
+    rememberCandidates(flattenDeepNodes(currentDeepResult.root_candidates).map((node) => node.candidate));
+    selectedCandidateId = selectedCandidateId || currentDeepResult.root_candidates[0]?.candidate?.candidate_id || null;
     renderDeep(currentDeepResult);
     reportEl.textContent = currentDeepResult.report;
     drawProfile(profileItemsFromDeep(currentDeepResult));
-    renderOverview();
+    refreshAllViews();
     updateMetrics();
     setView("deep");
     await refreshHealth();
@@ -707,6 +1301,85 @@ document.querySelectorAll(".nav-item").forEach((item) => {
 
 sidebarToggle.addEventListener("click", () => {
   document.querySelector(".app-shell").classList.toggle("sidebar-hidden");
+});
+
+saveSessionButton.addEventListener("click", () => {
+  const sessions = readStore(STORE_KEYS.sessions, []);
+  const notes = window.prompt("Session notes", searchPromptInput.value.trim()) || "";
+  const session = {
+    id: uid("session"),
+    name: currentFileName || `Session ${sessions.length + 1}`,
+    notes,
+    result: currentResult,
+    deep: currentDeepResult,
+    timeline: currentTimeline,
+    thumbnail: sessionThumbnail(),
+    image_data: sessionImageData(),
+    candidates: currentResult?.candidates.length || 0,
+    deep_nodes: currentDeepResult?.nodes_searched || 0,
+    created_at: new Date().toISOString(),
+  };
+  sessions.push(session);
+  if (!writeStore(STORE_KEYS.sessions, sessions)) {
+    session.image_data = "";
+    session.notes = `${notes}${notes ? " " : ""}(Full image restore omitted because browser storage is full.)`;
+    writeStore(STORE_KEYS.sessions, sessions);
+  }
+  renderSessions();
+  setView("sessions");
+});
+
+sessionsEl.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-open-session]");
+  if (!button) return;
+  openSession(button.dataset.openSession);
+});
+
+findingsEl.addEventListener("click", (event) => {
+  const selectButton = event.target.closest("[data-select-candidate]");
+  const saveButton = event.target.closest("[data-save-label]");
+  const datasetButton = event.target.closest("[data-add-dataset]");
+  if (selectButton) {
+    selectedCandidateId = selectButton.dataset.selectCandidate;
+    renderEvidence();
+    setView("evidence");
+  }
+  if (saveButton) {
+    const candidate = candidateById(saveButton.dataset.saveLabel);
+    const input = findingsEl.querySelector(`[data-label-for="${saveButton.dataset.saveLabel}"]`);
+    const label = input?.value.trim() || "reviewed pattern";
+    if (candidate) {
+      rememberCandidates([candidate], label);
+      addDatasetItem(candidate, label, "positive");
+      renderClusters();
+      renderDataset();
+    }
+  }
+  if (datasetButton) {
+    const candidate = candidateById(datasetButton.dataset.addDataset);
+    if (candidate) {
+      addDatasetItem(candidate, datasetButton.dataset.split === "negative" ? "rejected-pattern" : "accepted-pattern", datasetButton.dataset.split);
+      renderDataset();
+    }
+  }
+});
+
+calibrationEl.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-calibration]");
+  const candidate = candidateById(selectedCandidateId);
+  if (!button || !candidate) return;
+  addCalibration(candidate, button.dataset.calibration);
+  renderCalibration();
+  renderDataset();
+});
+
+datasetEl.addEventListener("click", (event) => {
+  if (event.target.closest("#exportJsonButton")) exportJson();
+  if (event.target.closest("#exportCsvButton")) exportCsv();
+  if (event.target.closest("#exportYoloButton")) exportYolo();
+  if (event.target.closest("#exportCocoButton")) exportCoco();
+  if (event.target.closest("#exportPngButton")) exportAnnotatedPng();
+  if (event.target.closest("#exportPdfButton")) exportPdfReport();
 });
 
 zoomOutButton.addEventListener("click", () => setZoom(zoom / 1.25));
@@ -768,7 +1441,7 @@ reviewsEl.addEventListener("click", async (event) => {
 drawEmpty();
 drawProfile();
 setZoom(1);
-renderOverview();
+refreshAllViews();
 renderFindings(null);
 renderDeep(null);
 refreshHealth();

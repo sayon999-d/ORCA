@@ -13,6 +13,16 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 - Recursive deep search that zooms into suspicious regions, enhances crops, and builds a typed search tree.
 - Canvas zoom and pan controls for inspecting image evidence without zooming the browser page.
 - Pattern profile graph under the inspection canvas for comparing score, confidence, and novelty.
+- Investigation Timeline that records image upload, prompt biasing, first-pass regions, crop refinement, deep-search nodes, and final evidence.
+- Pattern Clustering View backed by local vector-style memory so recurring unknown regions can be grouped over time.
+- Human label feedback loop for renaming a pattern and storing that label for future matching.
+- Before/After Evidence Viewer with original crop, enhanced crop, edge map, heatmap, and deep-search attachment.
+- Confidence Calibration panel for marking true positives, false positives, uncertain findings, and ignored findings.
+- Export tools for JSON evidence bundles, CSV candidate rows, YOLO labels, COCO annotations, annotated PNGs, and printable PDF reports.
+- Project Sessions that save image state, findings, deep-search tree, timeline, and notes in browser storage.
+- Open-vocabulary search notes that bias candidate ranking toward what the reviewer is searching for.
+- Model Comparison panel for browser analysis, FastAPI/OpenCV analysis, COCO novelty, calibration lift, and future custom models.
+- Dataset Builder that turns reviewed candidates into positive, negative, uncertain, and ignored training examples.
 - Dynamic refinement for low-confidence candidates.
 - JSONL vector memory with cosine similarity for recurring unknown patterns.
 - Human-in-the-loop review queue.
@@ -32,6 +42,14 @@ Static mode supports:
 - Deep Search.
 - Canvas zoom and pan.
 - Pattern profile graph.
+- Investigation timeline.
+- Pattern clustering.
+- Label feedback.
+- Evidence crop comparison.
+- Calibration.
+- Export bundles.
+- Saved sessions.
+- Dataset export.
 
 ### Optional Python API Mode
 
@@ -54,6 +72,8 @@ Use **Analyze** for the first-pass pattern search. Orca groups nearby points, ed
 
 Use **Deep Search** for recursive inspection. Orca crops each suspicious region, enhances it, zooms in, and searches again up to the selected depth.
 
+Use **Search note** to describe what you are looking for, such as `road-like grid patterns near bright clusters`. Orca uses the note as a ranking bias so relevant candidates appear first without requiring a fixed object class.
+
 Use the canvas zoom controls beside **Inspection**:
 
 - `+` zooms into the image.
@@ -69,6 +89,18 @@ localStorage.setItem("ORCA_API_BASE", "https://your-orca-api.example.com")
 ```
 
 Refresh the page after setting `ORCA_API_BASE`.
+
+## Investigation Workspace
+
+The right-side workspace is split into focused inspection views:
+
+- **Timeline**: an audit trail of each run, from upload to candidate discovery and deep-search traversal.
+- **Clusters**: recurring unknown patterns grouped from saved embeddings and human labels.
+- **Evidence**: candidate crops shown as original, enhanced, edge map, and heatmap views.
+- **Calibration**: reviewer decisions that separate true positives from false positives and uncertain results.
+- **Compare**: browser analyzer, FastAPI/OpenCV analyzer, COCO novelty, confidence, and calibration lift in one panel.
+- **Dataset**: export accepted positives, rejected negatives, uncertain items, and ignored regions to JSON, CSV, YOLO, or COCO formats.
+- **Sessions**: save and reopen an investigation with image preview, findings, deep-search tree, notes, and timeline.
 
 ## Deploy The FastAPI API To Vercel
 

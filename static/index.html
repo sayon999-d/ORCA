@@ -27,6 +27,27 @@
           <button class="nav-item" data-view="deep">
             <span>Deep Search</span>
           </button>
+          <button class="nav-item" data-view="timeline">
+            <span>Timeline</span>
+          </button>
+          <button class="nav-item" data-view="clusters">
+            <span>Clusters</span>
+          </button>
+          <button class="nav-item" data-view="evidence">
+            <span>Evidence</span>
+          </button>
+          <button class="nav-item" data-view="calibration">
+            <span>Calibration</span>
+          </button>
+          <button class="nav-item" data-view="compare">
+            <span>Compare</span>
+          </button>
+          <button class="nav-item" data-view="dataset">
+            <span>Dataset</span>
+          </button>
+          <button class="nav-item" data-view="sessions">
+            <span>Sessions</span>
+          </button>
           <button class="nav-item" data-view="report">
             <span>Report</span>
           </button>
@@ -52,6 +73,10 @@
             <span>Image</span>
             <input id="fileInput" type="file" accept="image/*" />
           </label>
+          <label class="prompt-control">
+            <span>Search note</span>
+            <input id="searchPromptInput" type="text" placeholder="Find repeated road-like grid patterns near bright clusters" />
+          </label>
           <div class="toolbar-actions">
             <label class="depth-control">
               <span>Depth</span>
@@ -59,6 +84,7 @@
             </label>
             <button id="analyzeButton">Analyze</button>
             <button id="deepButton">Deep Search</button>
+            <button id="saveSessionButton" type="button">Save Session</button>
           </div>
         </section>
 
@@ -117,6 +143,13 @@
             <div id="overview" class="view active"></div>
             <div id="findings" class="view"></div>
             <div id="deep" class="view"></div>
+            <div id="timeline" class="view"></div>
+            <div id="clusters" class="view"></div>
+            <div id="evidence" class="view"></div>
+            <div id="calibration" class="view"></div>
+            <div id="compare" class="view"></div>
+            <div id="dataset" class="view"></div>
+            <div id="sessions" class="view"></div>
             <pre id="report" class="view"></pre>
             <div id="reviews" class="view"></div>
           </article>
