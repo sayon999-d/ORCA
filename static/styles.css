@@ -183,7 +183,7 @@ h1 {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 0.95fr) minmax(280px, 1fr) auto;
+  grid-template-columns: minmax(330px, 0.9fr) minmax(360px, 1.1fr) auto;
   align-items: center;
   gap: 12px;
   justify-content: space-between;
@@ -206,32 +206,69 @@ h1 {
   gap: 11px;
   color: var(--muted);
   font-weight: 700;
+  min-width: 0;
 }
 
-.file-control input {
-  max-width: 280px;
+.file-control > span:first-child,
+.prompt-control > span:first-child,
+.depth-control > span:first-child {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
-.file-control input::file-selector-button {
-  min-height: 34px;
+.file-picker {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.file-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-button {
+  display: inline-grid;
+  place-items: center;
+  min-height: 36px;
   border: 1px solid rgba(20, 24, 31, 0.12);
   border-radius: 999px;
-  padding: 0 12px;
-  margin-right: 9px;
+  padding: 0 16px;
   color: #15171c;
-  background: rgba(255, 255, 255, 0.72);
-  font-weight: 760;
-  transition: background 260ms var(--ease-out), border-color 260ms var(--ease-out);
+  background: rgba(255, 255, 255, 0.74);
+  font-weight: 820;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: background 260ms var(--ease-out), border-color 260ms var(--ease-out), transform 260ms var(--ease-out);
 }
 
-.file-control input::file-selector-button:hover {
+.file-picker:hover .file-button {
   background: rgba(255, 255, 255, 0.96);
   border-color: rgba(20, 24, 31, 0.22);
+  transform: translateY(-1px);
+}
+
+.file-name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #6b7079;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .prompt-control {
   flex: 1;
-  min-width: 280px;
+  min-width: 0;
 }
 
 .prompt-control input {
@@ -759,6 +796,10 @@ pre {
   .depth-control {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .file-picker {
+    grid-template-columns: 1fr;
   }
 
   .prompt-control {

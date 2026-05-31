@@ -1,4 +1,5 @@
 const fileInput = document.querySelector("#fileInput");
+const selectedFileNameEl = document.querySelector("#selectedFileName");
 const depthInput = document.querySelector("#depthInput");
 const searchPromptInput = document.querySelector("#searchPromptInput");
 const analyzeButton = document.querySelector("#analyzeButton");
@@ -77,13 +78,14 @@ const viewLabels = {
   reviews: ["Reviews", "Human validation queue"],
 };
 
-function drawEmpty() {
+function drawEmpty(showLabel = true) {
   const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
   gradient.addColorStop(0, "#11151b");
   gradient.addColorStop(0.55, "#161b22");
   gradient.addColorStop(1, "#0d1117");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!showLabel) return;
   ctx.fillStyle = "#d8dde4";
   ctx.font = "700 18px system-ui";
   ctx.fillText("Orca inspection canvas", 32, 54);
@@ -227,7 +229,7 @@ function flattenDeepNodes(nodes, output = []) {
 }
 
 function drawPreview() {
-  drawEmpty();
+  drawEmpty(!currentImage);
   if (!currentImage) return;
   const frame = imageFrame();
   ctx.drawImage(currentImage, frame.x, frame.y, frame.width, frame.height);
@@ -1327,6 +1329,7 @@ fileInput.addEventListener("change", () => {
   if (!file) {
     currentImage = null;
     currentFileName = "";
+    selectedFileNameEl.textContent = "No image selected";
     imageMetaEl.textContent = "No image selected";
     drawPreview();
     renderOverview();
@@ -1336,6 +1339,7 @@ fileInput.addEventListener("change", () => {
   img.onload = () => {
     currentImage = img;
     currentFileName = file.name;
+    selectedFileNameEl.textContent = file.name;
     imageMetaEl.textContent = `${file.name} · ${img.width}×${img.height}`;
     drawPreview();
     renderOverview();

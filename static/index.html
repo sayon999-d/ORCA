@@ -71,7 +71,11 @@
         <section class="toolbar">
           <label class="file-control">
             <span>Image</span>
-            <input id="fileInput" type="file" accept="image/*" />
+            <span class="file-picker">
+              <input id="fileInput" type="file" accept="image/*" />
+              <span class="file-button">Browse</span>
+              <span id="selectedFileName" class="file-name">No image selected</span>
+            </span>
           </label>
           <label class="prompt-control">
             <span>Search note</span>
