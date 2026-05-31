@@ -24,8 +24,12 @@ DEFAULT_DATA_DIR = Path("/tmp/orca-data") if os.environ.get("VERCEL") else ROOT 
 DATA_DIR = Path(os.environ.get("ORCA_DATA_DIR", DEFAULT_DATA_DIR))
 UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+BASELINE_PATH = DATA_DIR / "coco_baseline.json"
+BUNDLED_BASELINE_PATH = ROOT / "data" / "coco_baseline.json"
+if not BASELINE_PATH.exists() and BUNDLED_BASELINE_PATH.exists():
+    shutil.copyfile(BUNDLED_BASELINE_PATH, BASELINE_PATH)
 
-coco_baseline = CocoBaselineModel(DATA_DIR / "coco_baseline.json")
+coco_baseline = CocoBaselineModel(BASELINE_PATH)
 perception = PerceptionEngine(max_candidates=8, baseline_model=coco_baseline)
 memory = VectorMemory(DATA_DIR / "pattern_memory.jsonl")
 review_queue = ReviewQueue(DATA_DIR / "review_queue.json")
