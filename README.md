@@ -1,6 +1,6 @@
 ![Orca](assets/orca-banner.svg)
 
-Orca is a model-driven image intelligence dashboard. It can run fully in the browser for static hosting, and it can optionally use the Python/OpenCV backend for stronger local analysis, COCO novelty scoring, memory, and human review.
+Orca is a model-driven image intelligence dashboard. It can run fully in the browser for static hosting, and it can use the Python/OpenCV API for stronger analysis, COCO novelty scoring, memory, and human review.
 
 ![Orca pipeline architecture](assets/pipeline-architecture.svg)
 
@@ -27,13 +27,14 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 - JSONL vector memory with cosine similarity for recurring unknown patterns.
 - Human-in-the-loop review queue.
 - Browser dashboard for image upload, findings, reports, zoom, graphing, and review actions.
-- Optional FastAPI backend for local or hosted API analysis.
+- API upload compression so large satellite or inspection images stay below hosted payload limits while canvas overlays remain aligned to the original image.
+- FastAPI-compatible backend for local or hosted API analysis.
 
 ## Run
 
 ### Static Browser Mode
 
-Open `static/index.html` through GitHub Pages or any static host. Analyze and Deep Search run in the browser using Canvas image processing. On non-localhost static deployments, Orca does not call `/api/*` unless `ORCA_API_BASE` is explicitly configured.
+Open `static/index.html` through GitHub Pages or any static host. Analyze and Deep Search run in the browser using Canvas image processing when no API is configured or reachable.
 
 Static mode supports:
 
@@ -82,7 +83,7 @@ Use the canvas zoom controls beside **Inspection**:
 - Mouse wheel zooms over the canvas.
 - Drag the canvas to pan when zoomed in.
 
-If no API is reachable, Orca automatically falls back to browser-side analysis. To use a hosted API from a static deployment, set:
+If no API is reachable, Orca automatically falls back to browser-side analysis. To point the dashboard at an API, set:
 
 ```js
 localStorage.setItem("ORCA_API_BASE", "https://your-orca-api.example.com")
@@ -102,45 +103,11 @@ The right-side workspace is split into focused inspection views:
 - **Dataset**: export accepted positives, rejected negatives, uncertain items, and ignored regions to JSON, CSV, YOLO, or COCO formats.
 - **Sessions**: save and reopen an investigation with image preview, findings, deep-search tree, notes, and timeline.
 
-## Deploy The FastAPI API To Vercel
+## Pipeline Architecture
 
-The GitHub Pages dashboard is static. For the Python/OpenCV API, deploy the FastAPI backend separately to Vercel.
+The browser keeps the original image for inspection, zoom, pan, crops, and annotated exports. When an API is configured, Orca creates a compressed JPEG analysis copy before upload. This prevents hosted request-size failures while scaling returned bounding boxes back onto the original image.
 
-This repo includes:
-
-- `api/index.py`: Vercel Python entrypoint that imports the FastAPI app.
-- `vercel.json`: routes all Vercel traffic to the FastAPI app.
-- `.vercelignore`: keeps local caches, uploads, and virtualenv files out of deployment.
-- `static/orca-config.js`: static dashboard API configuration file.
-
-Deploy:
-
-```bash
-vercel login
-vercel --prod
-```
-
-After deployment, copy the production URL, for example:
-
-```text
-https://orca-api.vercel.app
-```
-
-Then connect GitHub Pages to that API by adding a GitHub repository variable:
-
-```text
-ORCA_API_BASE=https://orca-api.vercel.app
-```
-
-The Pages workflow writes that value into `static/orca-config.js` during deployment.
-
-For stricter CORS on Vercel, set this Vercel environment variable:
-
-```text
-ORCA_ALLOWED_ORIGINS=https://sayon999-d.github.io
-```
-
-If `ORCA_API_BASE` is not set, Orca still works on GitHub Pages using browser-side Canvas analysis.
+The COCO baseline is loaded by the API and contributes `baseline_similarity` and `model_novelty` to each candidate. If the API is unreachable, the same dashboard falls back to browser-side Canvas analysis and still supports timeline, clusters, evidence, calibration, sessions, and dataset export.
 
 ## Train A COCO Baseline
 

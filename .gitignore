@@ -8,5 +8,6 @@ data/uploads/
 data/pattern_memory.jsonl
 data/review_queue.json
 data/coco/
+scripts/data/
 dist/
 .vercel

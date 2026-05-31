@@ -49,6 +49,8 @@ let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
 
 const API_BASE = window.ORCA_API_BASE || localStorage.getItem("ORCA_API_BASE") || "";
 const LOCAL_MODEL_LABEL = "Browser";
+const MAX_API_UPLOAD_BYTES = 3_200_000;
+const MAX_API_IMAGE_SIDE = 1800;
 const STORE_KEYS = {
   memory: "orca.patternMemory.v1",
   calibration: "orca.calibration.v1",
@@ -390,6 +392,9 @@ async function apiFetch(path, options = {}) {
   try {
     const res = await fetch(`${API_BASE}${path}`, options);
     if (!res.ok) {
+      if (res.status === 413) {
+        throw browserFallbackError("Hosted API rejected the image size. Running browser analysis instead.");
+      }
       let detail = `Request failed with status ${res.status}.`;
       try {
         const payload = await res.json();
@@ -406,6 +411,93 @@ async function apiFetch(path, options = {}) {
     }
     throw error;
   }
+}
+
+function canvasToBlob(sourceCanvas, type = "image/jpeg", quality = 0.82) {
+  return new Promise((resolve) => sourceCanvas.toBlob(resolve, type, quality));
+}
+
+function apiUploadName(file) {
+  const stem = (file.name || "orca-image").replace(/\.[^.]+$/, "");
+  return `${stem}-orca-api.jpg`;
+}
+
+async function apiUploadPayload(file) {
+  if (!currentImage) {
+    return { blob: file, filename: file.name || "image", compressed: false, scale: 1 };
+  }
+
+  const longestSide = Math.max(currentImage.width, currentImage.height);
+  const needsResize = longestSide > MAX_API_IMAGE_SIDE;
+  const needsCompression = file.size > MAX_API_UPLOAD_BYTES || needsResize;
+  if (!needsCompression) {
+    return { blob: file, filename: file.name || "image", compressed: false, scale: 1 };
+  }
+
+  const sideAttempts = [MAX_API_IMAGE_SIDE, 1500, 1200];
+  const qualityAttempts = [0.82, 0.72, 0.62];
+  let best = null;
+
+  for (const maxSide of sideAttempts) {
+    const scale = Math.min(1, maxSide / longestSide);
+    const uploadCanvas = document.createElement("canvas");
+    uploadCanvas.width = Math.max(1, Math.round(currentImage.width * scale));
+    uploadCanvas.height = Math.max(1, Math.round(currentImage.height * scale));
+    const uploadCtx = uploadCanvas.getContext("2d");
+    uploadCtx.drawImage(currentImage, 0, 0, uploadCanvas.width, uploadCanvas.height);
+
+    for (const quality of qualityAttempts) {
+      const blob = await canvasToBlob(uploadCanvas, "image/jpeg", quality);
+      if (!blob) continue;
+      best = { blob, filename: apiUploadName(file), compressed: true, scale, bytes: blob.size };
+      if (blob.size <= MAX_API_UPLOAD_BYTES) return best;
+    }
+  }
+
+  return best || { blob: file, filename: file.name || "image", compressed: false, scale: 1 };
+}
+
+function scaleBoxToOriginal(box, scale) {
+  if (!currentImage || !scale || scale === 1) return box;
+  const factor = 1 / scale;
+  return {
+    x_min: Math.max(0, Math.round(box.x_min * factor)),
+    y_min: Math.max(0, Math.round(box.y_min * factor)),
+    x_max: Math.min(currentImage.width, Math.round(box.x_max * factor)),
+    y_max: Math.min(currentImage.height, Math.round(box.y_max * factor)),
+  };
+}
+
+function normalizeCandidateCoordinates(candidate, payload) {
+  if (!payload?.compressed || !payload.scale || payload.scale === 1) return candidate;
+  return { ...candidate, bbox: scaleBoxToOriginal(candidate.bbox, payload.scale) };
+}
+
+function normalizeAnalysisResult(result, payload) {
+  if (!payload?.compressed) return result;
+  return {
+    ...result,
+    image: { ...result.image, width: currentImage.width, height: currentImage.height },
+    candidates: result.candidates.map((candidate) => normalizeCandidateCoordinates(candidate, payload)),
+  };
+}
+
+function normalizeDeepNodeCoordinates(node, payload) {
+  if (!payload?.compressed) return node;
+  return {
+    ...node,
+    candidate: normalizeCandidateCoordinates(node.candidate, payload),
+    children: (node.children || []).map((child) => normalizeDeepNodeCoordinates(child, payload)),
+  };
+}
+
+function normalizeDeepResult(result, payload) {
+  if (!payload?.compressed) return result;
+  return {
+    ...result,
+    image: { ...result.image, width: currentImage.width, height: currentImage.height },
+    root_candidates: result.root_candidates.map((node) => normalizeDeepNodeCoordinates(node, payload)),
+  };
 }
 
 function browserFallbackError(message) {
@@ -949,12 +1041,13 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
 }
 
-function selectedFormData() {
+async function selectedFormData() {
   const file = fileInput.files[0];
   if (!file) return null;
+  const payload = await apiUploadPayload(file);
   const form = new FormData();
-  form.append("file", file);
-  return form;
+  form.append("file", payload.blob, payload.filename);
+  return { form, payload };
 }
 
 function uid(prefix) {
@@ -1203,17 +1296,21 @@ fileInput.addEventListener("change", () => {
 });
 
 analyzeButton.addEventListener("click", async () => {
-  const form = selectedFormData();
-  if (!form) return;
+  const selection = await selectedFormData();
+  if (!selection) return;
+  const { form, payload } = selection;
   analyzeButton.disabled = true;
   analyzeButton.textContent = "Analyzing";
   currentTimeline = [];
   investigationStep("input", "Image uploaded", currentFileName || "Selected image");
+  if (payload.compressed) {
+    investigationStep("preprocess", "API upload compressed", `${Math.round(payload.bytes / 1024)} KB JPEG copy sent to avoid hosted payload limits`);
+  }
   if (searchPromptInput.value.trim()) {
     investigationStep("prompt", "Open-vocabulary note applied", searchPromptInput.value.trim());
   }
   try {
-    currentResult = await apiFetch("/api/analyze", { method: "POST", body: form });
+    currentResult = normalizeAnalysisResult(await apiFetch("/api/analyze", { method: "POST", body: form }), payload);
     currentResult.candidates = applyPromptBias(currentResult.candidates);
     lastAnalysisMode = "FastAPI/OpenCV";
   } catch (error) {
@@ -1249,14 +1346,18 @@ analyzeButton.addEventListener("click", async () => {
 });
 
 deepButton.addEventListener("click", async () => {
-  const form = selectedFormData();
-  if (!form) return;
+  const selection = await selectedFormData();
+  if (!selection) return;
+  const { form, payload } = selection;
   deepButton.disabled = true;
   deepButton.textContent = "Searching";
   investigationStep("deep_start", "Deep Search started", `Depth ${Math.max(1, Math.min(5, Number(depthInput.value || 3)))}`);
+  if (payload.compressed) {
+    investigationStep("preprocess", "API upload compressed", `${Math.round(payload.bytes / 1024)} KB JPEG copy sent to avoid hosted payload limits`);
+  }
   try {
     const depth = Math.max(1, Math.min(5, Number(depthInput.value || 3)));
-    currentDeepResult = await apiFetch(`/api/deep-analyze?max_depth=${depth}`, { method: "POST", body: form });
+    currentDeepResult = normalizeDeepResult(await apiFetch(`/api/deep-analyze?max_depth=${depth}`, { method: "POST", body: form }), payload);
     const originalNodes = currentDeepResult.root_candidates || [];
     currentDeepResult.root_candidates = applyPromptBias(originalNodes.map((node) => node.candidate)).map((candidate, index) => {
       const node = originalNodes.find((item) => item.candidate.candidate_id === candidate.candidate_id);

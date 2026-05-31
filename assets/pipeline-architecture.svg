@@ -1,8 +1,8 @@
-<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="520" rx="26" fill="#FFFFFF"/>
-  <rect x="24" y="24" width="1152" height="472" rx="20" fill="#F7F7F8" stroke="#D9DBDF"/>
-  <text x="60" y="78" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800">Orca pipeline architecture</text>
-  <text x="60" y="112" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="18">Typed image evidence moves through perception, memory, agent reasoning, and review.</text>
+<svg width="1280" height="620" viewBox="0 0 1280 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="620" rx="26" fill="#FFFFFF"/>
+  <rect x="28" y="28" width="1224" height="564" rx="20" fill="#F7F7F8" stroke="#D9DBDF"/>
+  <text x="64" y="82" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="800">Orca pipeline architecture</text>
+  <text x="64" y="116" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="18">The dashboard keeps the original image for inspection and sends a compressed analysis copy to the API when available.</text>
 
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -10,47 +10,64 @@
     </marker>
   </defs>
 
-  <rect x="58" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
-  <text x="84" y="216" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Image upload</text>
-  <text x="84" y="246" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Original pixels</text>
+  <rect x="64" y="172" width="182" height="102" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="90" y="210" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Image upload</text>
+  <text x="90" y="240" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Original image</text>
+  <text x="90" y="262" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Canvas state</text>
 
-  <rect x="292" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
-  <text x="318" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Perception</text>
-  <text x="318" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Pattern regions</text>
-  <text x="318" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Features and boxes</text>
+  <rect x="306" y="172" width="198" height="102" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="332" y="210" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Upload guard</text>
+  <text x="332" y="240" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Resize large inputs</text>
+  <text x="332" y="262" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Compress API copy</text>
 
-  <rect x="526" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
-  <text x="552" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">COCO baseline</text>
-  <text x="552" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Embedding search</text>
-  <text x="552" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Novelty score</text>
+  <rect x="564" y="172" width="198" height="102" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="590" y="210" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Perception API</text>
+  <text x="590" y="240" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">OpenCV regions</text>
+  <text x="590" y="262" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Features and boxes</text>
 
-  <rect x="760" y="176" width="178" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
-  <text x="786" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Agent</text>
-  <text x="786" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Decide action</text>
-  <text x="786" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Store or review</text>
+  <rect x="822" y="172" width="198" height="102" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="848" y="210" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">COCO baseline</text>
+  <text x="848" y="240" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Patch embeddings</text>
+  <text x="848" y="262" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Novelty scoring</text>
 
-  <rect x="994" y="176" width="148" height="98" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
-  <text x="1020" y="207" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Dashboard</text>
-  <text x="1020" y="237" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Inspect</text>
-  <text x="1020" y="260" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Validate</text>
+  <rect x="1080" y="172" width="136" height="102" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="1106" y="210" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Agent</text>
+  <text x="1106" y="240" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Decisions</text>
+  <text x="1106" y="262" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Review path</text>
 
-  <line x1="236" y1="225" x2="288" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="470" y1="225" x2="522" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="704" y1="225" x2="756" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
-  <line x1="938" y1="225" x2="990" y2="225" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="246" y1="223" x2="302" y2="223" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="504" y1="223" x2="560" y2="223" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="762" y1="223" x2="818" y2="223" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="1020" y1="223" x2="1076" y2="223" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
 
-  <rect x="292" y="348" width="178" height="92" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
-  <text x="318" y="383" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Deep search</text>
-  <text x="318" y="413" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Crop, enhance</text>
-  <text x="318" y="435" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Search again</text>
+  <rect x="64" y="374" width="198" height="112" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="90" y="412" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Browser fallback</text>
+  <text x="90" y="442" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Canvas analysis</text>
+  <text x="90" y="464" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Runs without API</text>
 
-  <rect x="760" y="348" width="178" height="92" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
-  <text x="786" y="383" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Memory</text>
-  <text x="786" y="413" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Recurring patterns</text>
-  <text x="786" y="435" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Human labels</text>
+  <rect x="322" y="374" width="198" height="112" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="348" y="412" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Deep search</text>
+  <text x="348" y="442" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Crop and enhance</text>
+  <text x="348" y="464" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Recursive regions</text>
 
-  <path d="M381 274 V344" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
-  <path d="M470 394 H728 C746 394 756 384 756 366 V276" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
-  <path d="M849 274 V344" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
-  <path d="M760 394 H614 C596 394 586 384 586 366 V278" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="580" y="374" width="198" height="112" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="606" y="412" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Coordinate restore</text>
+  <text x="606" y="442" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Scale boxes back</text>
+  <text x="606" y="464" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Original overlay</text>
+
+  <rect x="838" y="374" width="198" height="112" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="864" y="412" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Memory loop</text>
+  <text x="864" y="442" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Clusters and labels</text>
+  <text x="864" y="464" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Calibration data</text>
+
+  <rect x="1096" y="374" width="120" height="112" rx="12" fill="#FFFFFF" stroke="#C9CCD2"/>
+  <text x="1122" y="412" fill="#111317" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="750">Exports</text>
+  <text x="1122" y="442" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Reports</text>
+  <text x="1122" y="464" fill="#72757D" font-family="Inter, Arial, sans-serif" font-size="15">Datasets</text>
+
+  <path d="M155 274 V370" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M663 274 V370" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M762 430 H834" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M1020 430 H1092" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M421 374 V334 C421 316 437 306 455 306 H663 C681 306 679 292 679 278" stroke="#5B5F68" stroke-width="3" marker-end="url(#arrow)"/>
 </svg>
