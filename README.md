@@ -143,7 +143,7 @@ Or use the Kaggle CLI download path:
 ```bash
 export KAGGLE_API_TOKEN="your-kaggle-token"
 python -m pip install kaggle
-python scripts/train_space_baseline.py --download --image-dir data/space --model-path data/space_baseline.json
+python scripts/train_space_baseline.py --download --download-limit 20 --image-dir data/space --model-path data/space_baseline.json
 ```
 
 To use that baseline locally:
