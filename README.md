@@ -1,6 +1,6 @@
 ![Orca](assets/orca-banner.svg)
 
-Orca is a model-driven image intelligence dashboard. It can run fully in the browser for static hosting, and it can use the Python/OpenCV API for stronger analysis, COCO novelty scoring, memory, and human review.
+Orca is a model-driven image intelligence dashboard. It can run fully in the browser for static hosting, and it can use the Python/OpenCV API for stronger analysis, baseline novelty scoring, memory, and human review.
 
 ![Orca pipeline architecture](assets/pipeline-architecture.svg)
 
@@ -9,7 +9,7 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 - Static browser-side analyzer for GitHub Pages or any static host.
 - Optional typed Pydantic contracts for the Python pixel-to-agent bridge.
 - OpenCV perception engine that groups nearby visual evidence into pattern regions, then returns bounding boxes, anomaly scores, visual features, and embeddings.
-- Optional COCO-trained baseline model that learns normal image patch embeddings from `http://images.cocodataset.org/`.
+- Optional domain baseline model that learns normal image patch embeddings from COCO, astronomy, satellite, or inspection datasets.
 - Recursive deep search that zooms into suspicious regions, enhances crops, and builds a typed search tree.
 - Canvas zoom and pan controls for inspecting image evidence without zooming the browser page.
 - Pattern profile graph under the inspection canvas for comparing score, confidence, and novelty.
@@ -21,7 +21,7 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 - Export tools for JSON evidence bundles, CSV candidate rows, YOLO labels, COCO annotations, annotated PNGs, and printable PDF reports.
 - Project Sessions that save image state, findings, deep-search tree, timeline, and notes in browser storage.
 - Open-vocabulary search notes that bias candidate ranking toward what the reviewer is searching for.
-- Model Comparison panel for browser analysis, FastAPI/OpenCV analysis, COCO novelty, calibration lift, and future custom models.
+- Model Comparison panel for browser analysis, FastAPI/OpenCV analysis, baseline novelty, calibration lift, and future custom models.
 - Dataset Builder that turns reviewed candidates into positive, negative, uncertain, and ignored training examples.
 - Dynamic refinement for low-confidence candidates.
 - JSONL vector memory with cosine similarity for recurring unknown patterns.
@@ -99,7 +99,7 @@ The right-side workspace is split into focused inspection views:
 - **Clusters**: recurring unknown patterns grouped from saved embeddings and human labels.
 - **Evidence**: candidate crops shown as original, enhanced, edge map, and heatmap views.
 - **Calibration**: reviewer decisions that separate true positives from false positives and uncertain results.
-- **Compare**: browser analyzer, FastAPI/OpenCV analyzer, COCO novelty, confidence, and calibration lift in one panel.
+- **Compare**: browser analyzer, FastAPI/OpenCV analyzer, baseline novelty, confidence, and calibration lift in one panel.
 - **Dataset**: export accepted positives, rejected negatives, uncertain items, and ignored regions to JSON, CSV, YOLO, or COCO formats.
 - **Sessions**: save and reopen an investigation with image preview, findings, deep-search tree, notes, and timeline.
 
@@ -107,7 +107,7 @@ The right-side workspace is split into focused inspection views:
 
 The browser keeps the original image for inspection, zoom, pan, crops, and annotated exports. When an API is configured, Orca creates a compressed JPEG analysis copy before upload. This prevents hosted request-size failures while scaling returned bounding boxes back onto the original image.
 
-The COCO baseline is loaded by the API and contributes `baseline_similarity` and `model_novelty` to each candidate. If the API is unreachable, the same dashboard falls back to browser-side Canvas analysis and still supports timeline, clusters, evidence, calibration, sessions, and dataset export.
+The active baseline is loaded by the API and contributes `baseline_similarity` and `model_novelty` to each candidate. If the API is unreachable, the same dashboard falls back to browser-side Canvas analysis and still supports timeline, clusters, evidence, calibration, sessions, and dataset export.
 
 ## Train A COCO Baseline
 
@@ -123,6 +123,36 @@ Once trained, each candidate includes:
 
 - `baseline_similarity`: nearest COCO patch similarity.
 - `model_novelty`: how unlike the COCO baseline the candidate looks.
+
+## Train A Space Baseline
+
+For NASA or astronomy images, COCO is the wrong normal baseline. Download the Kaggle astronomy dataset first:
+
+```text
+https://www.kaggle.com/datasets/razaimam45/spacenet-an-optimally-distributed-astronomy-data
+```
+
+Unzip it into a local folder such as `data/space`, then train:
+
+```bash
+python scripts/train_space_baseline.py --image-dir data/space --model-path data/space_baseline.json
+```
+
+Or use the Kaggle CLI download path:
+
+```bash
+export KAGGLE_API_TOKEN="your-kaggle-token"
+python -m pip install kaggle
+python scripts/train_space_baseline.py --download --image-dir data/space --model-path data/space_baseline.json
+```
+
+To use that baseline locally:
+
+```bash
+ORCA_BASELINE_FILE=space_baseline.json uvicorn app.main:app --reload --port 8000
+```
+
+If `data/space_baseline.json` is bundled with the app, Orca prefers it over `data/coco_baseline.json`. The dashboard model label changes to `Space` when the active baseline source is the Kaggle astronomy dataset.
 
 ## Test
 

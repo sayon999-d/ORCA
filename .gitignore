@@ -8,6 +8,10 @@ data/uploads/
 data/pattern_memory.jsonl
 data/review_queue.json
 data/coco/
+data/space/
+data/kaggle-downloads/
+.env
+.env.*
 scripts/data/
 dist/
 .vercel

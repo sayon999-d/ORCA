@@ -26,6 +26,7 @@ def test_coco_baseline_trains_saves_and_scores(tmp_path: Path) -> None:
 
     assert metadata.image_count == 2
     assert metadata.patch_count > 0
+    assert metadata.source_url == "http://images.cocodataset.org/"
     assert baseline.is_trained
 
     reloaded = CocoBaselineModel(tmp_path / "baseline.json")
@@ -50,3 +51,21 @@ def test_perception_includes_coco_novelty_when_baseline_exists(tmp_path: Path) -
     for candidate in candidates:
         assert candidate.baseline_similarity is not None
         assert candidate.model_novelty is not None
+
+
+def test_baseline_can_store_domain_source_url(tmp_path: Path) -> None:
+    image_path = tmp_path / "space.jpg"
+    make_image(image_path, (20, 24, 42))
+
+    baseline = CocoBaselineModel(tmp_path / "space_baseline.json")
+    metadata = baseline.train_from_paths(
+        [image_path],
+        PerceptionEngine().embed_patch,
+        patch_size=64,
+        stride=64,
+        source_url="https://www.kaggle.com/datasets/razaimam45/spacenet-an-optimally-distributed-astronomy-data",
+    )
+
+    reloaded = CocoBaselineModel(tmp_path / "space_baseline.json")
+    assert metadata.source_url.startswith("https://www.kaggle.com/")
+    assert reloaded.summary()["source_url"].startswith("https://www.kaggle.com/")

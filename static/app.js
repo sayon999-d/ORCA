@@ -570,8 +570,16 @@ function updateMetrics(health = null) {
   deepCountEl.textContent = currentDeepResult?.nodes_searched ?? 0;
   if (health) {
     reviewCountEl.textContent = health.pending_reviews;
-    modelStateEl.textContent = health.coco_baseline?.trained ? "COCO" : "Local";
+    modelStateEl.textContent = baselineDisplayName(health.coco_baseline);
   }
+}
+
+function baselineDisplayName(baseline) {
+  if (!baseline?.trained) return "Local";
+  const source = String(baseline.source_url || "").toLowerCase();
+  if (source.includes("kaggle") || source.includes("space") || source.includes("astronomy")) return "Space";
+  if (source.includes("cocodataset")) return "COCO";
+  return "Baseline";
 }
 
 function refreshAllViews() {

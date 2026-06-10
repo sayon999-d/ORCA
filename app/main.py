@@ -24,9 +24,12 @@ DEFAULT_DATA_DIR = Path("/tmp/orca-data") if os.environ.get("VERCEL") else ROOT 
 DATA_DIR = Path(os.environ.get("ORCA_DATA_DIR", DEFAULT_DATA_DIR))
 UPLOAD_DIR = DATA_DIR / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-BASELINE_PATH = DATA_DIR / "coco_baseline.json"
-BUNDLED_BASELINE_PATH = ROOT / "data" / "coco_baseline.json"
+DEFAULT_BASELINE_FILE = "space_baseline.json" if (ROOT / "data" / "space_baseline.json").exists() else "coco_baseline.json"
+BASELINE_FILE = os.environ.get("ORCA_BASELINE_FILE", DEFAULT_BASELINE_FILE)
+BASELINE_PATH = Path(os.environ.get("ORCA_BASELINE_PATH", DATA_DIR / BASELINE_FILE))
+BUNDLED_BASELINE_PATH = ROOT / "data" / BASELINE_FILE
 if not BASELINE_PATH.exists() and BUNDLED_BASELINE_PATH.exists():
+    BASELINE_PATH.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(BUNDLED_BASELINE_PATH, BASELINE_PATH)
 
 coco_baseline = CocoBaselineModel(BASELINE_PATH)

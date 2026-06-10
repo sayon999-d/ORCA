@@ -52,6 +52,7 @@ class CocoBaselineModel:
         patch_size: int = 96,
         stride: int = 96,
         max_patches_per_image: int = 32,
+        source_url: str = "http://images.cocodataset.org/",
     ) -> CocoBaselineMetadata:
         vectors: list[list[float]] = []
         used_images = 0
@@ -69,6 +70,7 @@ class CocoBaselineModel:
 
         self.embeddings = np.array(vectors, dtype=np.float32)
         self.metadata = CocoBaselineMetadata(
+            source_url=source_url,
             image_count=used_images,
             patch_count=len(vectors),
             embedding_dim=int(self.embeddings.shape[1]),
@@ -138,4 +140,3 @@ class CocoBaselineModel:
 
         indexes = np.linspace(0, len(patches) - 1, max_patches, dtype=int)
         return [patches[index] for index in indexes]
-
