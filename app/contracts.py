@@ -66,6 +66,21 @@ class VisualFeatures(BaseModel):
     descriptor: str
 
 
+class BackendModelSummary(BaseModel):
+    model_name: str
+    model_version: str
+    mode: Literal["generic", "space"]
+    scene_type: str
+    confidence: float = Field(ge=0, le=1)
+    signal_density: float = Field(ge=0, le=1)
+    candidate_count: int = Field(ge=0)
+    average_candidate_score: float = Field(ge=0, le=1)
+    average_candidate_confidence: float = Field(ge=0, le=1)
+    top_labels: list[str] = Field(default_factory=list)
+    notes: str
+    created_at: datetime = Field(default_factory=utc_now)
+
+
 class AnomalyCandidate(BaseModel):
     candidate_id: str = Field(default_factory=lambda: str(uuid4()))
     bbox: BoundingBox
@@ -98,6 +113,7 @@ class AnalysisResult(BaseModel):
     candidates: list[AnomalyCandidate]
     similar_patterns: dict[str, list[SimilarPattern]]
     decisions: dict[str, AgentDecision]
+    backend_model: BackendModelSummary | None = None
     report: str
     created_at: datetime = Field(default_factory=utc_now)
 
@@ -116,6 +132,7 @@ class DeepAnalysisResult(BaseModel):
     max_depth: int = Field(ge=1, le=5)
     nodes_searched: int = Field(ge=0)
     root_candidates: list[DeepSearchNode]
+    backend_model: BackendModelSummary | None = None
     report: str
     created_at: datetime = Field(default_factory=utc_now)
 

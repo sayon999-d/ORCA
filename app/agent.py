@@ -9,11 +9,13 @@ from app.contracts import (
     AgentDecision,
     AnalysisResult,
     AnomalyCandidate,
+    BackendModelSummary,
     PatternMemoryRecord,
     ReviewItem,
     ReviewStatus,
 )
 from app.memory import ReviewQueue, VectorMemory
+from app.backend_model import BackendModelBridge
 from app.perception import PerceptionEngine
 
 
@@ -23,12 +25,14 @@ class AnomalyInvestigator:
         perception: PerceptionEngine,
         memory: VectorMemory,
         review_queue: ReviewQueue,
+        backend_model: BackendModelBridge | None = None,
         low_confidence_threshold: float = 0.58,
         human_review_threshold: float = 0.7,
     ) -> None:
         self.perception = perception
         self.memory = memory
         self.review_queue = review_queue
+        self.backend_model = backend_model
         self.low_confidence_threshold = low_confidence_threshold
         self.human_review_threshold = human_review_threshold
 
@@ -47,6 +51,7 @@ class AnomalyInvestigator:
             candidates=candidates,
             similar_patterns={},
             decisions={},
+            backend_model=self._backend_summary(image, metadata, candidates),
             report="",
         )
 
@@ -92,6 +97,16 @@ class AnomalyInvestigator:
             }
         )
         return result.model_copy(update={"report": self._report(result)})
+
+    def _backend_summary(
+        self,
+        image,
+        metadata,
+        candidates: list[AnomalyCandidate],
+    ) -> BackendModelSummary | None:
+        if self.backend_model is None:
+            return None
+        return self.backend_model.summarize(image, metadata, candidates)
 
     def _refine_low_confidence(self, image, candidates: list[AnomalyCandidate]) -> list[AnomalyCandidate]:
         final = list(candidates)

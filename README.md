@@ -13,6 +13,7 @@ The current design leans into a darker, more professional product style with a c
 - OpenCV perception engine that groups nearby visual evidence into pattern regions, then returns bounding boxes, anomaly scores, visual features, and embeddings.
 - SpacePerceptionEngine tuned separately for astronomy and other space imagery, with different thresholds and morphology so star fields and clustered light sources are handled differently from generic imagery.
 - Optional domain baseline model that learns normal image patch embeddings from COCO, astronomy, satellite, or inspection datasets.
+- Backend model bridge that summarizes each run alongside the perception engine without replacing it.
 - Recursive deep search that zooms into suspicious regions, enhances crops, and builds a typed search tree.
 - Canvas zoom and pan controls for inspecting image evidence without zooming the browser page.
 - Pattern profile graph under the inspection canvas for comparing score, confidence, and novelty.
@@ -42,6 +43,7 @@ The current design leans into a darker, more professional product style with a c
 - Reduced the visual dominance of the navigation and side panels so the whole page reads like a wide analytics board.
 - Changed fallback labeling so local browser analysis is shown as `Local` instead of `Browser`.
 - Added a separate space-analysis path in the backend so astronomy images can use specialized perception behavior.
+- Added a backend model bridge that summarizes each run and is exposed through the API and dashboard.
 
 ## Run
 

@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from app.agent import AnomalyInvestigator
+from app.backend_model import BackendModelBridge
 from app.memory import ReviewQueue, VectorMemory
 from app.perception import AstronomyDetectionBackend, PerceptionEngine, SpacePerceptionEngine
 
@@ -84,6 +85,23 @@ def test_agent_produces_report_and_review_queue(tmp_path: Path) -> None:
     assert result.report.startswith("Analysis run")
     assert result.candidates
     assert result.decisions
+
+
+def test_backend_model_summary_is_attached_to_results(tmp_path: Path) -> None:
+    path = tmp_path / "sample.png"
+    synthetic_image(path)
+    investigator = AnomalyInvestigator(
+        PerceptionEngine(max_candidates=4),
+        VectorMemory(tmp_path / "memory.jsonl"),
+        ReviewQueue(tmp_path / "reviews.json"),
+        backend_model=BackendModelBridge(space_mode=False),
+    )
+
+    result = investigator.analyze(path)
+
+    assert result.backend_model is not None
+    assert result.backend_model.candidate_count == len(result.candidates)
+    assert result.backend_model.model_name == "Orca Backend Model"
 
 
 def test_deep_analysis_returns_search_tree(tmp_path: Path) -> None:

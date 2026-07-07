@@ -14,6 +14,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.agent import AnomalyInvestigator
+from app.backend_model import BackendModelBridge
 from app.coco_baseline import CocoBaselineModel
 from app.contracts import PatternMemoryRecord, ReviewStatus, ReviewUpdate
 from app.memory import ReviewQueue, VectorMemory
@@ -48,9 +49,18 @@ def build_perception_engine() -> PerceptionEngine:
 
 
 perception = build_perception_engine()
+backend_model = BackendModelBridge(space_mode=isinstance(perception, SpacePerceptionEngine))
 memory = VectorMemory(DATA_DIR / "pattern_memory.jsonl")
 review_queue = ReviewQueue(DATA_DIR / "review_queue.json")
-investigator = AnomalyInvestigator(perception, memory, review_queue)
+investigator = AnomalyInvestigator(perception, memory, review_queue, backend_model=backend_model)
+
+
+def flatten_deep_nodes(nodes):
+    flattened = []
+    for node in nodes:
+        flattened.append(node)
+        flattened.extend(flatten_deep_nodes(node.children or []))
+    return flattened
 
 app = FastAPI(title="Orca", version="0.1.0")
 allowed_origins = [
@@ -87,6 +97,7 @@ def health():
         "pending_reviews": len(review_queue.pending()),
         "coco_baseline": coco_baseline.summary(),
         "perception_mode": "space" if isinstance(perception, SpacePerceptionEngine) else "generic",
+        "backend_model": backend_model.describe(),
     }
 
 
@@ -94,6 +105,7 @@ def health():
 def model_summary():
     summary = coco_baseline.summary()
     summary["perception_mode"] = "space" if isinstance(perception, SpacePerceptionEngine) else "generic"
+    summary["backend_model"] = backend_model.describe()
     return summary
 
 
@@ -124,7 +136,16 @@ async def deep_analyze_image(file: UploadFile = File(...), max_depth: int = 3):
         shutil.copyfileobj(file.file, output)
 
     try:
-        return perception.deep_analyze_path(target, max_depth=max_depth)
+        result = perception.deep_analyze_path(target, max_depth=max_depth)
+        return result.model_copy(
+            update={
+                "backend_model": backend_model.summarize(
+                    perception._load_image(target),
+                    result.image,
+                    [node.candidate for node in flatten_deep_nodes(result.root_candidates)],
+                )
+            }
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

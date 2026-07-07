@@ -42,6 +42,7 @@ let currentDeepResult = null;
 let currentTimeline = [];
 let selectedCandidateId = null;
 let lastAnalysisMode = "idle";
+let lastHealth = null;
 let activeView = "overview";
 let zoom = 1;
 let panX = 0;
@@ -632,8 +633,9 @@ function updateMetrics(health = null) {
   candidateCountEl.textContent = currentResult?.candidates.length ?? 0;
   deepCountEl.textContent = currentDeepResult?.nodes_searched ?? 0;
   if (health) {
+    lastHealth = health;
     reviewCountEl.textContent = health.pending_reviews;
-    modelStateEl.textContent = baselineDisplayName(health.coco_baseline);
+    modelStateEl.textContent = health.backend_model?.model_name || baselineDisplayName(health.coco_baseline);
     if (modeBadgeEl) {
       const mode = health.perception_mode === "space" ? "Space" : "Live";
       modeBadgeEl.querySelector("span:nth-child(2)").textContent = mode;
@@ -1069,6 +1071,7 @@ function renderCompare() {
   const trueCount = calibration.filter((item) => item.status === "true_positive").length;
   const falseCount = calibration.filter((item) => item.status === "false_positive").length;
   const calibratedLift = calibration.length ? (trueCount - falseCount) / calibration.length : 0;
+  const backendModel = lastHealth?.backend_model;
   compareEl.innerHTML = `
     <article class="overview-block">
       <strong>Model comparison</strong>
@@ -1078,7 +1081,7 @@ function renderCompare() {
       <span>COCO novelty average: ${noveltyAvg.toFixed(2)}</span>
       <span>Confidence average: ${confidenceAvg.toFixed(2)}</span>
       <span>Calibration lift: ${calibratedLift >= 0 ? "+" : ""}${calibratedLift.toFixed(2)}</span>
-      <span>Future custom model: ready slot</span>
+      <span>Backend model: ${backendModel ? `${escapeHtml(backendModel.model_name)} · ${escapeHtml(backendModel.scene_type)}` : "not loaded"}</span>
     </article>`;
 }
 
