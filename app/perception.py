@@ -137,7 +137,7 @@ class AstronomyDetectionBackend:
             maxLineGap=max(6, min(height, width) // 40),
         )
         if lines is not None:
-            for line in lines[:, 0]:
+            for line in np.asarray(lines).reshape(-1, 4):
                 x1, y1, x2, y2 = map(int, line)
                 left = max(0, min(x1, x2) - 4)
                 top = max(0, min(y1, y2) - 4)
