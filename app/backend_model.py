@@ -16,7 +16,6 @@ class BackendModelConfig:
 
 
 class BackendModelBridge:
-    """Lightweight backend model that summarizes results without replacing perception."""
 
     def __init__(self, *, space_mode: bool = False, config: BackendModelConfig | None = None) -> None:
         self.config = config or BackendModelConfig(mode="space" if space_mode else "generic")
