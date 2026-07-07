@@ -159,6 +159,12 @@ button {
   object-fit: cover;
 }
 
+.brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .brand strong {
   display: block;
   font-size: 0.98rem;
