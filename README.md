@@ -1,6 +1,8 @@
 ![Orca](assets/orca-banner.svg)
 
-Orca is a model-driven image intelligence dashboard. It can run fully in the browser for static hosting, and it can use the Python/OpenCV API for stronger analysis, baseline novelty scoring, memory, and human review.
+Orca is a model-driven image intelligence dashboard for pattern discovery, review, and deep visual inspection. It can run fully in the browser for static hosting, or use the Python/OpenCV API for stronger analysis, baseline novelty scoring, memory, and human review.
+
+The current design leans into a darker, more professional product style with a custom dark-blue orca logo, slimmer navigation, flatter stat cards, and a more restrained analytics layout inspired by modern Vercel-style interfaces.
 
 ![Orca pipeline architecture](assets/pipeline-architecture.svg)
 
@@ -9,6 +11,7 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 - Static browser-side analyzer for GitHub Pages or any static host.
 - Optional typed Pydantic contracts for the Python pixel-to-agent bridge.
 - OpenCV perception engine that groups nearby visual evidence into pattern regions, then returns bounding boxes, anomaly scores, visual features, and embeddings.
+- SpacePerceptionEngine tuned separately for astronomy and other space imagery, with different thresholds and morphology so star fields and clustered light sources are handled differently from generic imagery.
 - Optional domain baseline model that learns normal image patch embeddings from COCO, astronomy, satellite, or inspection datasets.
 - Recursive deep search that zooms into suspicious regions, enhances crops, and builds a typed search tree.
 - Canvas zoom and pan controls for inspecting image evidence without zooming the browser page.
@@ -21,7 +24,7 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 - Export tools for JSON evidence bundles, CSV candidate rows, YOLO labels, COCO annotations, annotated PNGs, and printable PDF reports.
 - Project Sessions that save image state, findings, deep-search tree, timeline, and notes in browser storage.
 - Open-vocabulary search notes that bias candidate ranking toward what the reviewer is searching for.
-- Model Comparison panel for browser analysis, FastAPI/OpenCV analysis, baseline novelty, calibration lift, and future custom models.
+- Model Comparison panel for local analysis, FastAPI/OpenCV analysis, baseline novelty, calibration lift, and future custom models.
 - Dataset Builder that turns reviewed candidates into positive, negative, uncertain, and ignored training examples.
 - Dynamic refinement for low-confidence candidates.
 - JSONL vector memory with cosine similarity for recurring unknown patterns.
@@ -29,6 +32,16 @@ Orca is a model-driven image intelligence dashboard. It can run fully in the bro
 - Browser dashboard for image upload, findings, reports, zoom, graphing, and review actions.
 - API upload compression so large satellite or inspection images stay below hosted payload limits while canvas overlays remain aligned to the original image.
 - FastAPI-compatible backend for local or hosted API analysis.
+- Custom dark-blue Orca logo used in the sidebar, favicon, and banner assets.
+
+## Recent Work
+
+- Reworked the dashboard styling to feel more like a premium analytics product: slimmer sidebar, flatter cards, tighter spacing, calmer borders, and cleaner typography.
+- Replaced the old lettermark with a dark-blue orca logo and updated the favicon and banner artwork to match.
+- Tuned the overview pattern profile and timeline graphics so the lines are thinner, smoother, and more muted.
+- Reduced the visual dominance of the navigation and side panels so the whole page reads like a wide analytics board.
+- Changed fallback labeling so local browser analysis is shown as `Local` instead of `Browser`.
+- Added a separate space-analysis path in the backend so astronomy images can use specialized perception behavior.
 
 ## Run
 
@@ -51,6 +64,8 @@ Static mode supports:
 - Export bundles.
 - Saved sessions.
 - Dataset export.
+
+If you want the branding to look identical everywhere, make sure the browser is refreshed after pulling the latest assets so the new logo and favicon replace any cached copies.
 
 ### Optional Python API Mode
 

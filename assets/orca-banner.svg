@@ -1,24 +1,34 @@
 <svg width="1200" height="260" viewBox="0 0 1200 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="1200" height="260" rx="28" fill="#050505"/>
-  <rect x="24" y="24" width="1152" height="212" rx="22" fill="#111317" stroke="#2D3036"/>
-  <path d="M178 76C207 48 254 48 283 76C312 104 312 150 283 178C254 206 207 206 178 178C149 150 149 104 178 76Z" stroke="#F7F7F8" stroke-width="10" stroke-dasharray="420" stroke-dashoffset="420">
-    <animate attributeName="stroke-dashoffset" from="420" to="0" dur="1.4s" fill="freeze"/>
-  </path>
-  <circle cx="232" cy="127" r="22" fill="#F7F7F8">
-    <animate attributeName="r" values="10;24;22" dur="1.1s" begin="0.7s" fill="freeze"/>
-  </circle>
-  <text x="352" y="142" fill="#F7F7F8" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="800" letter-spacing="0">
-    Orca
-    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="0.45s" fill="freeze"/>
-  </text>
-  <text x="356" y="180" fill="#A8A9AD" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">
-    Model-driven image intelligence
-    <animate attributeName="opacity" values="0;1" dur="0.8s" begin="0.8s" fill="freeze"/>
-  </text>
-  <line x1="764" y1="126" x2="1016" y2="126" stroke="#5B5F68" stroke-width="3" stroke-dasharray="8 12">
-    <animate attributeName="stroke-dashoffset" from="120" to="0" dur="1.8s" repeatCount="indefinite"/>
-  </line>
-  <rect x="1036" y="98" width="80" height="56" rx="14" fill="#F7F7F8">
-    <animate attributeName="opacity" values="0.45;1;0.45" dur="2.2s" repeatCount="indefinite"/>
-  </rect>
+  <defs>
+    <linearGradient id="bannerBg" x1="0" y1="0" x2="1200" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#050607"/>
+      <stop offset="100%" stop-color="#08162c"/>
+    </linearGradient>
+    <linearGradient id="orcaBg" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="100%" stop-color="#102c5f"/>
+    </linearGradient>
+    <linearGradient id="orcaBody" x1="18" y1="18" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e4ea6"/>
+      <stop offset="100%" stop-color="#0f2c64"/>
+    </linearGradient>
+    <linearGradient id="waveLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1e4ea6" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#38d47a" stop-opacity="0.7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="260" rx="28" fill="url(#bannerBg)"/>
+  <rect x="24" y="24" width="1152" height="212" rx="22" fill="#0d1117" stroke="#1a2741"/>
+  <g transform="translate(54 50)">
+    <rect width="96" height="96" rx="28" fill="url(#orcaBg)"/>
+    <path d="M19 56C21 42 31 31 46 28C56 26 65 29 71 35C66 36 62 39 60 44C66 46 70 51 70 58C70 64 66 69 61 70C52 72 43 69 37 64C23 61 18 59 19 56Z" fill="url(#orcaBody)"/>
+    <path d="M43 31C45 26 49 23 54 22C53 26 51 30 48 33L43 31Z" fill="#163c84"/>
+    <ellipse cx="58" cy="41" rx="1.8" ry="2.2" fill="#d9e6ff"/>
+  </g>
+  <text x="178" y="110" fill="#eff4fb" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="-0.03em">Orca</text>
+  <text x="179" y="150" fill="#93a4be" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="500">Dark-blue image intelligence system</text>
+  <line x1="178" y1="176" x2="1068" y2="176" stroke="url(#waveLine)" stroke-width="4" stroke-linecap="round" />
+  <circle cx="178" cy="176" r="5" fill="#4b84ff"/>
+  <circle cx="1068" cy="176" r="5" fill="#38d47a"/>
+  <path d="M166 196C225 180 300 182 360 192C428 203 500 196 575 176C642 157 705 163 760 176C826 192 893 193 958 180C1000 172 1039 172 1082 180" stroke="#1e4ea6" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
 </svg>

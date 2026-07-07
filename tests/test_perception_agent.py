@@ -6,7 +6,7 @@ import numpy as np
 
 from app.agent import AnomalyInvestigator
 from app.memory import ReviewQueue, VectorMemory
-from app.perception import PerceptionEngine
+from app.perception import AstronomyDetectionBackend, PerceptionEngine, SpacePerceptionEngine
 
 
 def synthetic_image(path: Path) -> None:
@@ -30,6 +30,21 @@ def synthetic_pattern_image(path: Path) -> None:
         start = (int(rng.integers(380, 650)), int(rng.integers(240, 420)))
         end = (start[0] + int(rng.integers(-120, 140)), start[1] + int(rng.integers(-90, 90)))
         cv2.line(image, start, end, (130, 135, 125), 2)
+    cv2.imwrite(str(path), image)
+
+
+def synthetic_space_image(path: Path) -> None:
+    image = np.zeros((720, 960, 3), dtype=np.uint8)
+    rng = np.random.default_rng(11)
+    for _ in range(420):
+        x = int(rng.integers(0, image.shape[1]))
+        y = int(rng.integers(0, image.shape[0]))
+        radius = int(rng.integers(1, 4))
+        value = int(rng.integers(160, 255))
+        cv2.circle(image, (x, y), radius, (value, value, value), -1)
+    cv2.circle(image, (640, 260), 62, (235, 230, 250), 2)
+    cv2.circle(image, (640, 260), 22, (245, 245, 255), -1)
+    cv2.line(image, (580, 160), (790, 420), (210, 210, 220), 2)
     cv2.imwrite(str(path), image)
 
 
@@ -80,3 +95,29 @@ def test_deep_analysis_returns_search_tree(tmp_path: Path) -> None:
     assert result.max_depth == 2
     assert result.nodes_searched >= len(result.root_candidates)
     assert result.report.startswith("Deep search run") or result.report.startswith("Deep search found")
+
+
+def test_space_backend_detects_bright_sources(tmp_path: Path) -> None:
+    path = tmp_path / "space.png"
+    synthetic_space_image(path)
+
+    _, candidates = SpacePerceptionEngine(max_candidates=6).analyze_path(path)
+
+    assert candidates
+    assert any(
+        "bright source" in candidate.features.descriptor
+        or "circular source" in candidate.features.descriptor
+        or "streak" in candidate.features.descriptor
+        for candidate in candidates
+    )
+
+
+def test_astronomy_backend_returns_candidate_regions(tmp_path: Path) -> None:
+    path = tmp_path / "space-backend.png"
+    synthetic_space_image(path)
+    image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+
+    regions = AstronomyDetectionBackend().detect(image)
+
+    assert regions
+    assert any(region.label in {"bright-source", "circular-source", "streak"} for region in regions)

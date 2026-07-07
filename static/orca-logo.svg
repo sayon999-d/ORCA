@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Orca logo">
+  <defs>
+    <linearGradient id="orcaBg" x1="16" y1="14" x2="112" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="100%" stop-color="#102c5f"/>
+    </linearGradient>
+    <linearGradient id="orcaBody" x1="26" y1="34" x2="104" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e4ea6"/>
+      <stop offset="55%" stop-color="#163d86"/>
+      <stop offset="100%" stop-color="#0f2c64"/>
+    </linearGradient>
+    <linearGradient id="orcaHighlight" x1="42" y1="46" x2="90" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4f7ad1" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#2f5fbf" stop-opacity="0.0"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#orcaBg)"/>
+  <path d="M28 76C31 55 46 38 69 33C84 30 96 34 105 43C98 45 92 50 89 57C99 61 105 70 105 80C105 93 95 104 82 106C66 109 50 104 38 95C31 90 26 84 28 76Z" fill="url(#orcaBody)"/>
+  <path d="M63 38C66 29 74 23 83 22C81 31 77 39 71 46L63 38Z" fill="#163c84"/>
+  <path d="M37 72C44 66 53 61 63 58C72 55 82 55 92 58C86 65 80 70 72 74C63 78 52 80 41 79C39 77 38 75 37 72Z" fill="url(#orcaHighlight)"/>
+  <ellipse cx="86" cy="56" rx="3.4" ry="4.2" fill="#d9e6ff"/>
+  <path d="M27 78C31 88 39 96 51 101C41 100 33 96 27 90C24 86 22 82 22 78H27Z" fill="#143268"/>
+  <path d="M102 79C104 83 104 88 102 93C97 101 90 105 81 106C91 100 97 92 99 84L102 79Z" fill="#143268"/>
+</svg>

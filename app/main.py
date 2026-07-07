@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 if __package__ in {None, ""}:
@@ -17,7 +17,7 @@ from app.agent import AnomalyInvestigator
 from app.coco_baseline import CocoBaselineModel
 from app.contracts import PatternMemoryRecord, ReviewStatus, ReviewUpdate
 from app.memory import ReviewQueue, VectorMemory
-from app.perception import PerceptionEngine
+from app.perception import PerceptionEngine, SpacePerceptionEngine
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA_DIR = Path("/tmp/orca-data") if os.environ.get("VERCEL") else ROOT / "data"
@@ -33,7 +33,21 @@ if not BASELINE_PATH.exists() and BUNDLED_BASELINE_PATH.exists():
     shutil.copyfile(BUNDLED_BASELINE_PATH, BASELINE_PATH)
 
 coco_baseline = CocoBaselineModel(BASELINE_PATH)
-perception = PerceptionEngine(max_candidates=8, baseline_model=coco_baseline)
+
+
+def _is_space_baseline() -> bool:
+    source_url = (coco_baseline.metadata.source_url or "").lower()
+    baseline_name = BASELINE_PATH.name.lower()
+    return "kaggle.com" in source_url or "space" in baseline_name
+
+
+def build_perception_engine() -> PerceptionEngine:
+    if _is_space_baseline():
+        return SpacePerceptionEngine(max_candidates=10, baseline_model=coco_baseline)
+    return PerceptionEngine(max_candidates=8, baseline_model=coco_baseline)
+
+
+perception = build_perception_engine()
 memory = VectorMemory(DATA_DIR / "pattern_memory.jsonl")
 review_queue = ReviewQueue(DATA_DIR / "review_queue.json")
 investigator = AnomalyInvestigator(perception, memory, review_queue)
@@ -59,6 +73,12 @@ def index():
     return FileResponse(ROOT / "static" / "index.html")
 
 
+@app.get("/favicon.ico")
+def favicon():
+    favicon_path = ROOT / "static" / "favicon.svg"
+    return Response(favicon_path.read_text(encoding="utf-8"), media_type="image/svg+xml")
+
+
 @app.get("/api/health")
 def health():
     return {
@@ -66,12 +86,15 @@ def health():
         "memory_records": len(memory.all()),
         "pending_reviews": len(review_queue.pending()),
         "coco_baseline": coco_baseline.summary(),
+        "perception_mode": "space" if isinstance(perception, SpacePerceptionEngine) else "generic",
     }
 
 
 @app.get("/api/model")
 def model_summary():
-    return coco_baseline.summary()
+    summary = coco_baseline.summary()
+    summary["perception_mode"] = "space" if isinstance(perception, SpacePerceptionEngine) else "generic"
+    return summary
 
 
 @app.post("/api/analyze")

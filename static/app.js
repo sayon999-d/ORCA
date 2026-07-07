@@ -30,6 +30,7 @@ const candidateCountEl = document.querySelector("#candidateCount");
 const deepCountEl = document.querySelector("#deepCount");
 const reviewCountEl = document.querySelector("#reviewCount");
 const modelStateEl = document.querySelector("#modelState");
+const modeBadgeEl = document.querySelector("#modeBadge");
 const imageMetaEl = document.querySelector("#imageMeta");
 const viewTitleEl = document.querySelector("#viewTitle");
 const viewSubtitleEl = document.querySelector("#viewSubtitle");
@@ -49,7 +50,7 @@ let isPanning = false;
 let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
 
 const API_BASE = window.ORCA_API_BASE || localStorage.getItem("ORCA_API_BASE") || "";
-const LOCAL_MODEL_LABEL = "Browser";
+const LOCAL_MODEL_LABEL = "Local";
 const MAX_API_UPLOAD_BYTES = 3_200_000;
 const MAX_API_IMAGE_SIDE = 1800;
 const CANVAS_STAGE_PADDING = 18;
@@ -80,72 +81,134 @@ const viewLabels = {
 
 function drawEmpty(showLabel = true) {
   const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  gradient.addColorStop(0, "#11151b");
-  gradient.addColorStop(0.55, "#161b22");
-  gradient.addColorStop(1, "#0d1117");
+  gradient.addColorStop(0, "#0c0d10");
+  gradient.addColorStop(0.52, "#111317");
+  gradient.addColorStop(1, "#070708");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (!showLabel) return;
-  ctx.fillStyle = "#d8dde4";
+  ctx.fillStyle = "#dfe3e8";
   ctx.font = "700 18px system-ui";
   ctx.fillText("Orca inspection canvas", 32, 54);
 }
 
 function drawProfile(items = []) {
   profileCtx.clearRect(0, 0, profileCanvas.width, profileCanvas.height);
-  profileCtx.fillStyle = "#fff";
+  const gradient = profileCtx.createLinearGradient(0, 0, profileCanvas.width, profileCanvas.height);
+  gradient.addColorStop(0, "#0f1113");
+  gradient.addColorStop(1, "#090a0c");
+  profileCtx.fillStyle = gradient;
   profileCtx.fillRect(0, 0, profileCanvas.width, profileCanvas.height);
-  profileCtx.strokeStyle = "#e4e5e7";
+  profileCtx.strokeStyle = "rgba(255, 255, 255, 0.035)";
   profileCtx.lineWidth = 1;
 
-  for (let i = 0; i < 4; i += 1) {
-    const y = 24 + i * 34;
+  const gridTop = 24;
+  const gridBottom = profileCanvas.height - 22;
+  const gridLeft = 26;
+  const gridRight = profileCanvas.width - 16;
+  const rowCount = 4;
+  const columnCount = 8;
+  for (let row = 0; row <= rowCount; row += 1) {
+    const y = gridTop + ((gridBottom - gridTop) * row) / rowCount;
     profileCtx.beginPath();
-    profileCtx.moveTo(34, y);
-    profileCtx.lineTo(profileCanvas.width - 18, y);
+    profileCtx.moveTo(gridLeft, y);
+    profileCtx.lineTo(gridRight, y);
+    profileCtx.stroke();
+  }
+  for (let column = 0; column <= columnCount; column += 1) {
+    const x = gridLeft + ((gridRight - gridLeft) * column) / columnCount;
+    profileCtx.beginPath();
+    profileCtx.moveTo(x, gridTop);
+    profileCtx.lineTo(x, gridBottom);
     profileCtx.stroke();
   }
 
   if (!items.length) {
-    profileCtx.fillStyle = "#72757d";
-    profileCtx.font = "15px system-ui";
+    profileCtx.fillStyle = "#76808a";
+    profileCtx.font = "600 12px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
     profileCtx.fillText("Run Analyze or Deep Search to compare pattern strength.", 34, 92);
     profileMetaEl.textContent = "No pattern data yet";
     return;
   }
 
-  const visible = items.slice(0, 8);
-  const groupWidth = (profileCanvas.width - 76) / visible.length;
-  const barWidth = Math.min(18, groupWidth / 5);
-  const baseline = 146;
-  const chartHeight = 112;
-  const series = [
-    ["score", "#050505"],
-    ["confidence", "#5b5f68"],
-    ["novelty", "#a8a9ad"],
-  ];
+  const visible = items.slice(0, 10);
+  const seriesMap = {
+    score: { color: "rgba(75,132,255,0.78)", points: [] },
+    confidence: { color: "rgba(56,212,122,0.62)", points: [] },
+    novelty: { color: "rgba(240,176,75,0.52)", points: [] },
+  };
 
   visible.forEach((item, index) => {
-    const x = 42 + index * groupWidth;
-    series.forEach(([key, color], seriesIndex) => {
-      const value = Math.max(0, Math.min(1, item[key] ?? 0));
-      const height = value * chartHeight;
-      profileCtx.fillStyle = color;
-      profileCtx.fillRect(x + seriesIndex * (barWidth + 4), baseline - height, barWidth, height);
-    });
-    profileCtx.fillStyle = "#72757d";
-    profileCtx.font = "12px system-ui";
-    profileCtx.fillText(String(index + 1), x + 6, 166);
+    const x = gridLeft + (visible.length === 1 ? 0 : ((gridRight - gridLeft) * index) / (visible.length - 1));
+    seriesMap.score.points.push({ x, y: gridBottom - Math.max(0, Math.min(1, item.score ?? 0)) * (gridBottom - gridTop) });
+    seriesMap.confidence.points.push({ x, y: gridBottom - Math.max(0, Math.min(1, item.confidence ?? 0)) * (gridBottom - gridTop) });
+    seriesMap.novelty.points.push({ x, y: gridBottom - Math.max(0, Math.min(1, item.novelty ?? 0)) * (gridBottom - gridTop) });
   });
 
-  profileCtx.fillStyle = "#111317";
-  profileCtx.font = "12px system-ui";
-  profileCtx.fillText("score", profileCanvas.width - 170, 22);
-  profileCtx.fillStyle = "#5b5f68";
-  profileCtx.fillText("confidence", profileCanvas.width - 122, 22);
-  profileCtx.fillStyle = "#a8a9ad";
-  profileCtx.fillText("novelty", profileCanvas.width - 40, 22);
+  drawSmoothSeries(profileCtx, seriesMap.score.points, seriesMap.score.color, true);
+  drawSmoothSeries(profileCtx, seriesMap.confidence.points, seriesMap.confidence.color, true);
+  drawSmoothSeries(profileCtx, seriesMap.novelty.points, seriesMap.novelty.color, false);
+
+  profileCtx.fillStyle = "#6d727c";
+  profileCtx.font = "700 10px ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif";
+  profileCtx.fillText("Score", profileCanvas.width - 184, 22);
+  profileCtx.fillStyle = "rgba(56,212,122,0.82)";
+  profileCtx.fillText("Confidence", profileCanvas.width - 132, 22);
+  profileCtx.fillStyle = "rgba(75,132,255,0.82)";
+  profileCtx.fillText("Novelty", profileCanvas.width - 48, 22);
   profileMetaEl.textContent = `${visible.length} pattern${visible.length === 1 ? "" : "s"} compared`;
+}
+
+function drawSmoothSeries(ctx2d, points, color, fillArea = false) {
+  if (!points.length) return;
+  ctx2d.save();
+  ctx2d.lineJoin = "round";
+  ctx2d.lineCap = "round";
+  ctx2d.strokeStyle = color;
+  ctx2d.lineWidth = 1.45;
+  ctx2d.shadowColor = color;
+  ctx2d.shadowBlur = 1.25;
+
+  ctx2d.beginPath();
+  points.forEach((point, index) => {
+    if (index === 0) {
+      ctx2d.moveTo(point.x, point.y);
+    } else {
+      const prev = points[index - 1];
+      const midX = (prev.x + point.x) / 2;
+      ctx2d.quadraticCurveTo(prev.x, prev.y, midX, (prev.y + point.y) / 2);
+    }
+  });
+  const last = points[points.length - 1];
+  ctx2d.lineTo(last.x, last.y);
+  ctx2d.stroke();
+
+  if (fillArea) {
+    ctx2d.shadowBlur = 0;
+    ctx2d.lineTo(last.x, profileCanvas.height - 20);
+    ctx2d.lineTo(points[0].x, profileCanvas.height - 20);
+    ctx2d.closePath();
+    const fill = ctx2d.createLinearGradient(0, 24, 0, profileCanvas.height - 20);
+    fill.addColorStop(0, rgbaWithAlpha(color, 0.12));
+    fill.addColorStop(1, "rgba(255,255,255,0.01)");
+    ctx2d.fillStyle = fill;
+    ctx2d.fill();
+  }
+
+  points.forEach((point) => {
+    ctx2d.beginPath();
+    ctx2d.fillStyle = color;
+    ctx2d.arc(point.x, point.y, 2.8, 0, Math.PI * 2);
+    ctx2d.fill();
+  });
+  ctx2d.restore();
+}
+
+function rgbaWithAlpha(color, alpha) {
+  const match = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (!match) return color;
+  const parts = match[1].split(",").map((part) => part.trim());
+  return `rgba(${parts.slice(0, 3).join(", ")}, ${alpha})`;
 }
 
 function imageFrame() {
@@ -571,6 +634,11 @@ function updateMetrics(health = null) {
   if (health) {
     reviewCountEl.textContent = health.pending_reviews;
     modelStateEl.textContent = baselineDisplayName(health.coco_baseline);
+    if (modeBadgeEl) {
+      const mode = health.perception_mode === "space" ? "Space" : "Live";
+      modeBadgeEl.querySelector("span:nth-child(2)").textContent = mode;
+      modeBadgeEl.querySelector("small").textContent = health.perception_mode === "space" ? "analysis" : "mode";
+    }
   }
 }
 
@@ -607,7 +675,7 @@ async function refreshReviews() {
   try {
     reviews = await apiFetch("/api/reviews");
   } catch {
-    reviewsEl.innerHTML = '<p class="empty">Server review queue is unavailable in browser mode.</p>';
+    reviewsEl.innerHTML = '<p class="empty">Server review queue is unavailable in local mode.</p>';
     return;
   }
   reviewCountEl.textContent = reviews.filter((review) => review.status === "pending").length;
@@ -647,16 +715,254 @@ function renderOverview() {
   const deepNodes = currentDeepResult?.nodes_searched ?? 0;
   const report = currentDeepResult?.report || currentResult?.report || "No analysis run yet.";
   const summary = report.split("\n")[0];
+  const reviewTotal = readStore(STORE_KEYS.calibration, []).length;
+  const candidateScores = (currentResult?.candidates || []).map((candidate) => candidate.anomaly_score);
+  const candidateConfidences = (currentResult?.candidates || []).map((candidate) => candidate.confidence);
+  const avgScore = candidateScores.length ? candidateScores.reduce((sum, value) => sum + value, 0) / candidateScores.length : 0;
+  const avgConfidence = candidateConfidences.length ? candidateConfidences.reduce((sum, value) => sum + value, 0) / candidateConfidences.length : 0;
+  const mixCounts = timelineMixCounts();
+  const mixEntries = Object.entries(mixCounts);
+  const mixTotal = mixEntries.reduce((sum, [, value]) => sum + value, 0) || 1;
+  const trend = timelineTrendValues();
+  const trendMax = Math.max(1, ...trend);
+  const mixColors = ["var(--green)", "var(--blue)", "var(--pink)", "var(--amber)"];
+  const balance = [
+    { label: "Detect", value: avgScore, color: "var(--green)" },
+    { label: "Trust", value: avgConfidence, color: "var(--blue)" },
+    { label: "Review", value: reviewTotal ? Math.min(1, reviewTotal / 8) : 0.12, color: "var(--amber)" },
+  ];
+
   overviewEl.innerHTML = `
-    <article class="overview-block">
-      <strong>${currentImage ? imageMetaEl.textContent : "No image selected"}</strong>
-      <span>${candidates} candidates</span>
-      <span>${deepNodes} deep-search nodes</span>
-    </article>
-    <article class="overview-block">
-      <strong>Latest summary</strong>
-      <span>${escapeHtml(summary)}</span>
-    </article>`;
+    <section class="overview-shell">
+      <article class="overview-banner">
+        <div>
+          <span class="overview-kicker">Live analysis</span>
+          <strong>${currentImage ? escapeHtml(currentImage.name || imageMetaEl.textContent) : "Orca Vision"}</strong>
+          <p>${currentImage ? escapeHtml(imageMetaEl.textContent) : "No image selected"}</p>
+        </div>
+        <div class="overview-chip">
+          <span class="chip-dot"></span>
+          <span>${currentResult ? "Creating" : "Idle"}</span>
+          <small>${currentResult ? `${candidates} items` : "0 items"}</small>
+        </div>
+      </article>
+
+      <div class="overview-stats">
+        <article class="overview-stat stat-green">
+          <span>Output</span>
+          <strong>${candidates}</strong>
+          <small>Detected regions</small>
+        </article>
+        <article class="overview-stat stat-blue">
+          <span>Input</span>
+          <strong>${deepNodes}</strong>
+          <small>Deep-search nodes</small>
+        </article>
+        <article class="overview-stat stat-amber">
+          <span>Visible text</span>
+          <strong>${Math.round(avgConfidence * 100)}%</strong>
+          <small>Average confidence</small>
+        </article>
+        <article class="overview-stat stat-pink">
+          <span>Reviews</span>
+          <strong>${reviewTotal}</strong>
+          <small>Human checks</small>
+        </article>
+      </div>
+
+      <article class="overview-panel">
+        <header>
+          <div>
+            <strong>Token balance</strong>
+            <span>Confidence and novelty balance</span>
+          </div>
+          <span class="overview-ratio">${Math.max(1, Math.round((avgScore + 0.2) * 10))}:${Math.max(2, Math.round((1 - avgConfidence) * 10 + 2))}</span>
+        </header>
+        <div class="balance-track" aria-hidden="true">
+          ${balance
+            .map(
+              (item) => `
+                <div class="balance-segment" style="--segment:${Math.max(8, Math.round(item.value * 100))}%; --segment-color:${item.color}">
+                  <span>${item.label}</span>
+                </div>`
+            )
+            .join("")}
+        </div>
+        <div class="overview-mini-grid">
+          ${balance
+            .map(
+              (item) => `
+                <div class="overview-mini">
+                  <span>${item.label}</span>
+                  <strong>${Math.round(item.value * 100)}%</strong>
+                </div>`
+            )
+            .join("")}
+        </div>
+      </article>
+
+      <article class="overview-panel">
+        <header>
+          <div>
+            <strong>Category mix</strong>
+            <span>Timeline event distribution</span>
+          </div>
+          <span class="overview-ratio">${mixTotal} tracked</span>
+        </header>
+        <div class="mix-track" aria-hidden="true">
+          ${mixEntries.slice(0, 4)
+            .map(
+              ([label, value], index) => `
+                <div class="mix-segment" style="width:${Math.max(4, (value / mixTotal) * 100)}%; background: linear-gradient(90deg, ${mixColors[index]}, rgba(255,255,255,0.4));">
+                  <span>${escapeHtml(label)}</span>
+                </div>`
+            )
+            .join("")}
+        </div>
+        <div class="mix-legend">
+          ${mixEntries.slice(0, 4)
+            .map(
+              ([label, value], index) => `
+                <div class="mix-item">
+                  <span class="mix-dot" style="background:${mixColors[index]}"></span>
+                  <strong>${escapeHtml(label)}</strong>
+                  <small>${value}</small>
+                </div>`
+            )
+            .join("")}
+        </div>
+      </article>
+
+      <article class="overview-panel overview-chart-panel">
+        <header>
+          <div>
+            <strong>Timeline</strong>
+            <span>${escapeHtml(summary)}</span>
+          </div>
+          <span class="overview-ratio">Today</span>
+        </header>
+        ${renderWaveSvg(trend, trendMax)}
+      </article>
+    </section>`;
+}
+
+function renderWaveSvg(values, maxValue) {
+  const series = values.length ? values : [0.14, 0.26, 0.21, 0.38, 0.18, 0.12, 0.22, 0.16];
+  const width = 960;
+  const height = 180;
+  const paddingX = 18;
+  const paddingY = 18;
+  const plotWidth = width - paddingX * 2;
+  const plotHeight = height - paddingY * 2;
+  const points = series.map((value, index) => {
+    const x = paddingX + (plotWidth * index) / Math.max(1, series.length - 1);
+    const normalized = Math.max(0, Math.min(1, value / maxValue));
+    const y = paddingY + plotHeight * (1 - normalized);
+    return { x, y, value };
+  });
+
+  const bluePath = makeWavePath(points);
+  const greenPoints = points.map((point, index) => ({
+    x: point.x,
+    y: point.y + (index % 2 === 0 ? 10 : -8),
+  }));
+  const greenPath = makeWavePath(greenPoints);
+
+  const gridRows = 4;
+  const gridCols = 10;
+  const grid = [];
+  for (let row = 0; row <= gridRows; row += 1) {
+    const y = paddingY + (plotHeight * row) / gridRows;
+    grid.push(`<line x1="${paddingX}" y1="${y}" x2="${width - paddingX}" y2="${y}" />`);
+  }
+  for (let col = 0; col <= gridCols; col += 1) {
+    const x = paddingX + (plotWidth * col) / gridCols;
+    grid.push(`<line x1="${x}" y1="${paddingY}" x2="${x}" y2="${height - paddingY}" />`);
+  }
+
+  return `
+    <div class="trend-chart">
+      <svg class="trend-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="trendFillBlue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(75,132,255,0.34)" />
+            <stop offset="100%" stop-color="rgba(75,132,255,0.02)" />
+          </linearGradient>
+          <linearGradient id="trendFillGreen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="rgba(56,212,122,0.20)" />
+            <stop offset="100%" stop-color="rgba(56,212,122,0.02)" />
+          </linearGradient>
+          <filter id="waveGlow" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 12 -4" result="glow" />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <g class="trend-grid">
+          ${grid.join("")}
+        </g>
+        <path d="${areaPath(points, height, paddingY)}" fill="url(#trendFillBlue)" />
+        <path d="${areaPath(greenPoints, height, paddingY)}" fill="url(#trendFillGreen)" />
+        <path d="${bluePath}" fill="none" stroke="rgba(75,132,255,0.72)" stroke-width="2.0" filter="url(#waveGlow)" />
+        <path d="${greenPath}" fill="none" stroke="rgba(56,212,122,0.54)" stroke-width="1.7" opacity="0.78" filter="url(#waveGlow)" />
+        ${points
+          .map(
+            (point, index) => `
+              <circle cx="${point.x}" cy="${point.y}" r="2.2" fill="${index % 2 === 0 ? '#4b84ff' : '#38d47a'}" opacity="0.92" />`
+          )
+          .join("")}
+      </svg>
+    </div>`;
+}
+
+function makeWavePath(points) {
+  if (!points.length) return "";
+  if (points.length === 1) {
+    return `M ${points[0].x} ${points[0].y}`;
+  }
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let index = 1; index < points.length; index += 1) {
+    const prev = points[index - 1];
+    const current = points[index];
+    const midX = (prev.x + current.x) / 2;
+    d += ` Q ${prev.x} ${prev.y}, ${midX} ${(prev.y + current.y) / 2}`;
+  }
+  const last = points[points.length - 1];
+  d += ` T ${last.x} ${last.y}`;
+  return d;
+}
+
+function areaPath(points, height, paddingY) {
+  if (!points.length) return "";
+  const wave = makeWavePath(points);
+  const start = points[0];
+  const end = points[points.length - 1];
+  return `${wave} L ${end.x} ${height - paddingY} L ${start.x} ${height - paddingY} Z`;
+}
+
+function timelineMixCounts() {
+  const counts = {};
+  currentTimeline.forEach((step) => {
+    const key = String(step.type || "other");
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  if (!Object.keys(counts).length) {
+    counts.idle = 1;
+  }
+  return counts;
+}
+
+function timelineTrendValues() {
+  const values = currentTimeline.slice(-10).map((step) => {
+    const score = Number(step.score ?? 0);
+    const confidence = Number(step.confidence ?? 0);
+    return Math.max(score, confidence);
+  });
+  if (values.length) return values;
+  return currentResult?.candidates.slice(0, 10).map((candidate) => Math.max(candidate.anomaly_score, candidate.confidence)) || [0.12, 0.18, 0.15, 0.22];
 }
 
 function renderTimeline() {
@@ -767,7 +1073,7 @@ function renderCompare() {
     <article class="overview-block">
       <strong>Model comparison</strong>
       <span>Active mode: ${escapeHtml(lastAnalysisMode)}</span>
-      <span>Browser analyzer average score: ${browserAvg.toFixed(2)}</span>
+      <span>Local analyzer average score: ${browserAvg.toFixed(2)}</span>
       <span>FastAPI/OpenCV: ${API_BASE ? "configured" : "not configured"}</span>
       <span>COCO novelty average: ${noveltyAvg.toFixed(2)}</span>
       <span>Confidence average: ${confidenceAvg.toFixed(2)}</span>
@@ -1268,7 +1574,7 @@ function browserAnalysisResult() {
     similarPatterns[candidate.candidate_id] = [];
     decisions[candidate.candidate_id] = {
       action: candidate.confidence > 0.66 ? "store_memory" : "ask_human",
-      reason: "Browser-side pattern search completed without the FastAPI backend.",
+      reason: "Local-side pattern search completed without the FastAPI backend.",
       needs_human: candidate.confidence <= 0.66,
       uncertainty: Number((1 - Math.max(candidate.confidence, candidate.anomaly_score)).toFixed(4)),
     };
@@ -1286,7 +1592,7 @@ function browserAnalysisResult() {
     candidates,
     similar_patterns: similarPatterns,
     decisions,
-    report: `Browser analysis run\nImage: ${currentFileName || "browser-image"} (${currentImage.width}x${currentImage.height})\nCandidates found: ${candidates.length}`,
+    report: `Local analysis run\nImage: ${currentFileName || "browser-image"} (${currentImage.width}x${currentImage.height})\nCandidates found: ${candidates.length}`,
     created_at: new Date().toISOString(),
   };
 }
@@ -1317,7 +1623,7 @@ function browserDeepResult(maxDepth) {
     max_depth: maxDepth,
     nodes_searched: nodes.length,
     root_candidates: roots,
-    report: `Browser deep search run\nImage: ${currentFileName || "browser-image"} (${currentImage.width}x${currentImage.height})\nDepth limit: ${maxDepth}; nodes searched: ${nodes.length}`,
+    report: `Local deep search run\nImage: ${currentFileName || "browser-image"} (${currentImage.width}x${currentImage.height})\nDepth limit: ${maxDepth}; nodes searched: ${nodes.length}`,
     created_at: new Date().toISOString(),
   };
 }
@@ -1380,7 +1686,7 @@ analyzeButton.addEventListener("click", async () => {
       return;
     }
     currentResult = browserAnalysisResult();
-    lastAnalysisMode = "Browser";
+    lastAnalysisMode = "Local fallback";
     modelStateEl.textContent = LOCAL_MODEL_LABEL;
   }
   try {
@@ -1432,7 +1738,7 @@ deepButton.addEventListener("click", async () => {
     }
     const depth = Math.max(1, Math.min(5, Number(depthInput.value || 3)));
     currentDeepResult = browserDeepResult(depth);
-    lastAnalysisMode = "Browser deep";
+    lastAnalysisMode = "Local fallback deep";
     modelStateEl.textContent = LOCAL_MODEL_LABEL;
   }
   try {

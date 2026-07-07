@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Orca">
+  <defs>
+    <linearGradient id="b" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#08111f"/>
+      <stop offset="100%" stop-color="#102c5f"/>
+    </linearGradient>
+    <linearGradient id="o" x1="18" y1="18" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e4ea6"/>
+      <stop offset="100%" stop-color="#0f2c64"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#b)"/>
+  <path d="M13 37C15 25 24 17 37 14C46 12 53 14 57 20C53 21 50 24 48 28C53 30 56 35 56 41C56 48 51 54 44 55C35 57 26 54 19 48C15 45 12 41 13 37Z" fill="url(#o)"/>
+  <path d="M35 19C37 14 42 11 47 10C46 15 44 19 41 22L35 19Z" fill="#163c84"/>
+  <ellipse cx="46" cy="30" rx="1.8" ry="2.2" fill="#d9e6ff"/>
+</svg>
